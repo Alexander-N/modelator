@@ -1,3 +1,5 @@
+pub mod files;
+
 /// Modelator's options.
 mod options;
 
