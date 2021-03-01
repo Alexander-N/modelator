@@ -4,6 +4,29 @@ local tla = import "tla.jsonnet";
 
 {
 
+manifest: {
+  name : "history",
+  description: "A module to track a set of variables in the history of a TLA+ module", 
+  version: "0.1.0",
+  methods: [ 
+    {
+      name: "track_history_variables",
+      description: "extend the TLA+ module with tracking of the given set of variables in history", 
+      inputs: {
+        module: "tla-json",
+        variables: ["string"]
+      },
+      results: {
+        module: "tla-json"
+      },
+      errors: {
+        message: "string",
+        output: "string"
+      }
+    }
+  ]
+},
+
 // ===== External interface =====
 
 // Extends the module with history tracking; vars is the a the array of variables to capture.
@@ -13,11 +36,11 @@ local tla = import "tla.jsonnet";
 // The following assumptions are made:
 // - the module contains neither "history" or "historyLen" variables
 // - the module has "Init" and "Next" operators
-extendModuleWithHistory(module, vars):: 
+track_history_variables(module, variables):: 
   local m1 = tla.moduleAddVariable(module, "history");
   local m2 = tla.moduleAddVariable(m1, "historyLen");
   local m3 = tla.moduleExtendOperator(m2, "Init", initHistoryPredicate);
-  tla.moduleExtendOperator(m3, "Next", nextHistoryPredicate(vars)),
+  tla.moduleExtendOperator(m3, "Next", nextHistoryPredicate(variables)),
 
 
 // ===== Internal functions =====
@@ -65,6 +88,3 @@ local nextHistoryPredicate(vars) =
   ]),
 
 }
-
-
-

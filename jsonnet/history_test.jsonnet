@@ -3,7 +3,7 @@ local history = import "history.jsonnet";
 local lightclient = import "Lightclient_003_draft.json";
 
 
-local moduleWithHistory = history.extendModuleWithHistory(lightclient, [["verdict", "prevVerdict"],["now", "prevNow"]]);
+local moduleWithHistory = history.track_history_variables(lightclient, [["verdict", "prevVerdict"],["now", "prevNow"]]);
 
 assert(tla.moduleGetOperator(moduleWithHistory, "Init") == 
   {

@@ -3,26 +3,26 @@
 {
 
 manifest: {
-  module: {
-      name : "weighted_instance",
-      description: "A module to generate instances of a weighted JSON configuration", 
-      "version": "0.1.0",
-      "methods": [ "instances_upto" ]
-    },
-  instances_upto: {
+  name : "weighted_instance",
+  description: "A module to generate instances of a weighted JSON configuration", 
+  version: "0.1.0",
+  methods: [ 
+    {
+      name: "instances_upto",
       description: "generate all instances of a weighted JSON configuration up to the given weight", 
-      "inputs": {
-        "config": "weighted_jsonnet",
-        "max_weight": "integer"
+      inputs: {
+        config: "weighted_jsonnet",
+        max_weight: "integer"
       },
-      "results": {
-        "instances": ["json"]
+      results: {
+        instances: ["json"]
       },
-      "errors": {
-        "message": "string",
-        "output": "string"
+      errors: {
+        message: "string",
+        output: "string"
       }
     }
+  ]
 }, 
 
 // Instantiate the given config up to the maximum instance weight

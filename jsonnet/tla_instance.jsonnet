@@ -6,27 +6,27 @@ local check = import "check.jsonnet";
 {
 
 manifest: {
-  module: {
-      name : "tla_instance",
-      description: "A module to generate instances of TLA+ combined with configuration", 
-      version: "0.1.0",
-      methods: [ "instantiate" ]
-    },
-  instantiate: {
+  name : "tla_instance",
+  description: "A module to generate instances of TLA+ combined with configuration", 
+  version: "0.1.0",
+  methods: [ 
+    {
+      name: "instantiate",
       description: "intstantiate a TLA+ model by substituting values for constants from a config", 
       inputs: {
-        model: "json-tla",
+        model: "tla-json",
         config: "json"
       },
       results: {
-        instance: "json-tla"
+        instance: "tla-json"
       },
       errors: {
         message: "string",
         output: "string"
       }
     }
-}, 
+  ],
+},
 
 local constToTla(const) = 
   if check.isInteger(const).ok() then
