@@ -4,6 +4,8 @@ mod options;
 /// Modelator's error type.
 mod error;
 
+pub mod module;
+
 /// Download jar utilities.
 mod jar;
 
