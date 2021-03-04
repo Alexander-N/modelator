@@ -1,4 +1,5 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize};
+use crate::{Artifact, ArtifactManifest};
 
 #[derive(Debug, Deserialize)]
 pub struct ModuleManifest {
@@ -24,13 +25,11 @@ pub struct MethodManifest {
     pub errors: Vec<ArtifactManifest>,    
 }
 
-#[derive(Debug, Deserialize)]
-pub struct ArtifactManifest {
-    pub name: &'static str,
-    #[serde(rename = "type")]
-    pub typ: &'static str    
-}
+
 
 pub trait Module {
     fn manifest() -> ModuleManifest;
+    fn run(method: &str, inputs: Vec<Box<dyn Artifact>>) -> Result<Vec<Box<dyn Artifact>>, Vec<Box<dyn Artifact>>>;
+
 }
+

@@ -1,4 +1,9 @@
+use std::fmt::Display;
+use crate::Artifact;
+
 pub(crate) type TLAState = String;
+
+#[derive(Debug)]
 pub(crate) struct Trace {
     pub states: Vec<TLAState>,
 }
@@ -15,4 +20,17 @@ impl Trace {
     pub(crate) fn is_empty(&self) -> bool {
         self.states.is_empty()
     }
+}
+
+impl Display for Trace {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for state in &self.states {
+            write!(f, "{}\n\n", state)?;
+        }
+        Ok(())
+    }
+}
+
+impl Artifact for Trace {
+    
 }
