@@ -1,15 +1,21 @@
 use std::fmt;
-use serde::{Deserialize};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize)]
+pub mod trace;
+
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct ArtifactManifest {
     pub name: &'static str,
     #[serde(rename = "type")]
     pub typ: &'static str    
 }
 
+enum Type {
+    TLA
+}
+
 pub trait Artifact: fmt::Display {
-    
+    //fn name() -> &'static str;
 }
 
 impl fmt::Debug for Artifact {
