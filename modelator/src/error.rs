@@ -1,5 +1,5 @@
-use thiserror::Error;
 use crate::Artifact;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -28,6 +28,9 @@ pub enum Error {
     InvalidTLCOutput(std::path::PathBuf),
 
     #[error("Error while running method {module}.{method}")]
-    ModuleRun{ module: String, method: String, errors: Vec<Box<dyn Artifact>> },
-
+    ModuleRun {
+        module: String,
+        method: String,
+        errors: Vec<Box<dyn Artifact>>,
+    },
 }

@@ -1,5 +1,5 @@
-use std::fmt;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 pub mod trace;
 
@@ -7,11 +7,11 @@ pub mod trace;
 pub struct ArtifactManifest {
     pub name: &'static str,
     #[serde(rename = "type")]
-    pub typ: &'static str    
+    pub typ: &'static str,
 }
 
 enum Type {
-    TLA
+    TLA,
 }
 
 pub trait Artifact: fmt::Display {
@@ -23,6 +23,3 @@ impl fmt::Debug for Artifact {
         todo!()
     }
 }
-
-
-

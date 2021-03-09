@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
 use crate::{Artifact, ArtifactManifest};
-use serde_json;
 use paste::paste;
+use serde::{Deserialize, Serialize};
+use serde_json;
 
 pub mod tlc;
 
@@ -10,7 +10,7 @@ pub struct ModuleManifest {
     pub name: &'static str,
     pub description: &'static str,
     pub version: &'static str,
-    pub methods: Vec<MethodManifest>
+    pub methods: Vec<MethodManifest>,
 }
 
 // For static manifests of modules in Rust
@@ -24,27 +24,27 @@ impl From<&'static str> for ModuleManifest {
 pub struct MethodManifest {
     pub name: &'static str,
     pub description: &'static str,
-    pub inputs: Vec<ArtifactManifest>,    
-    pub results: Vec<ArtifactManifest>,    
-    pub errors: Vec<ArtifactManifest>,    
+    pub inputs: Vec<ArtifactManifest>,
+    pub results: Vec<ArtifactManifest>,
+    pub errors: Vec<ArtifactManifest>,
 }
-
-
 
 pub trait Module {
     fn manifest() -> ModuleManifest;
     fn manifest_json() -> String {
         serde_json::to_string_pretty(&Self::manifest()).unwrap()
     }
-    
-    //fn run(&self, method: &str, inputs: Vec<Box<dyn Artifact>>) -> Result<Vec<Box<dyn Artifact>>, Vec<Box<dyn Artifact>>>;
 
+    //fn run(&self, method: &str, inputs: Vec<Box<dyn Artifact>>) -> Result<Vec<Box<dyn Artifact>>, Vec<Box<dyn Artifact>>>;
 }
 
 pub trait Method {
     fn manifest() -> MethodManifest;
-    fn run(&self, method: &str, inputs: Vec<Box<dyn Artifact>>) -> Result<Vec<Box<dyn Artifact>>, Vec<Box<dyn Artifact>>>;
-
+    fn run(
+        &self,
+        method: &str,
+        inputs: Vec<Box<dyn Artifact>>,
+    ) -> Result<Vec<Box<dyn Artifact>>, Vec<Box<dyn Artifact>>>;
 }
 
 // A macro for constructing modules
@@ -81,10 +81,10 @@ macro_rules! method {
     ) => {
         paste! {
             impl $module {
-                pub fn $name(&self, $($input: $input_t),*) 
-                    -> Result<($($result_t),*), ($($error_t),*)> 
+                pub fn $name(&self, $($input: $input_t),*)
+                    -> Result<($($result_t),*), ($($error_t),*)>
                     $b
-                
+
                 pub fn [<$name _manifest>]() -> MethodManifest {
                     MethodManifest {
                         name: stringify!($name),
@@ -114,7 +114,6 @@ macro_rules! method {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -124,16 +123,15 @@ mod tests {
     pub struct Test {}
     pub struct Trace {}
     pub struct Log {}
-    
-    pub struct TLC {}
-    
 
-    module!{
+    pub struct TLC {}
+
+    module! {
         TLC("TLC model checker", "1.0")
         methods(test)
     }
-    
-    method!{
+
+    method! {
         TLC.test("Run TLC model checker on the given model, config, and test, and produce a trace for them")
         inputs(model: Model, config: ModelConfig, test: Test)
         results(trace: Trace)
@@ -142,7 +140,7 @@ mod tests {
             Err(("not implemented".to_string(), Log{}))
         }
     }
-    
+
     #[test]
     fn module_manifest() {
         assert_eq!(
@@ -188,7 +186,6 @@ mod tests {
                 }
                 ]
             }
-            "#).unwrap());    
+            "#).unwrap());
     }
-
 }

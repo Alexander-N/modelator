@@ -1,5 +1,5 @@
-use std::fmt::Display;
 use crate::Artifact;
+use std::fmt::Display;
 
 pub(crate) type TLAState = String;
 
@@ -31,6 +31,4 @@ impl Display for Trace {
     }
 }
 
-impl Artifact for Trace {
-    
-}
+impl Artifact for Trace {}
