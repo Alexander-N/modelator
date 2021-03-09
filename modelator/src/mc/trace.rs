@@ -1,5 +1,4 @@
-use crate::Artifact;
-use std::fmt::Display;
+use serde_json::Value as JsonValue;
 
 pub(crate) type TLAState = String;
 
@@ -22,13 +21,25 @@ impl Trace {
     }
 }
 
-impl Display for Trace {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for state in &self.states {
-            write!(f, "{}\n\n", state)?;
-        }
-        Ok(())
+pub struct JsonTrace {
+    pub states: Vec<JsonValue>,
+}
+
+impl JsonTrace {
+    pub(crate) fn new() -> Self {
+        Self { states: Vec::new() }
+    }
+
+    pub(crate) fn add(&mut self, state: JsonValue) {
+        self.states.push(state);
     }
 }
 
-impl Artifact for Trace {}
+impl IntoIterator for JsonTrace {
+    type Item = JsonValue;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.states.into_iter()
+    }
+}
