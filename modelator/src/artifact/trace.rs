@@ -42,11 +42,17 @@ impl Artifact for Trace {
         "trace"
     }
 
-    fn from_string(s: &str) -> Result<Self, crate::Error> where Self: Sized {
+    fn from_string(s: &str) -> Result<Self, crate::Error>
+    where
+        Self: Sized,
+    {
         todo!()
     }
 
-    fn from_file(f: &Path) -> Result<Self, crate::Error> where Self: Sized {
+    fn from_file(f: &Path) -> Result<Self, crate::Error>
+    where
+        Self: Sized,
+    {
         todo!()
     }
 

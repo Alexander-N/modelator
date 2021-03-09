@@ -6,10 +6,8 @@ use super::ArtifactFormat;
 pub(crate) type TLAState = String;
 
 #[derive(Debug)]
-pub(crate) struct Model {
+pub(crate) struct Model {}
 
-}
-    
 impl Display for Model {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Ok(())
@@ -25,11 +23,17 @@ impl Artifact for Model {
         "model"
     }
 
-    fn from_string(s: &str) -> Result<Self, crate::Error> where Self: Sized {
+    fn from_string(s: &str) -> Result<Self, crate::Error>
+    where
+        Self: Sized,
+    {
         todo!()
     }
 
-    fn from_file(f: &Path) -> Result<Self, crate::Error> where Self: Sized {
+    fn from_file(f: &Path) -> Result<Self, crate::Error>
+    where
+        Self: Sized,
+    {
         todo!()
     }
 
