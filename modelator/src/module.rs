@@ -3,8 +3,6 @@ use paste::paste;
 use serde::{Deserialize, Serialize};
 use serde_json;
 
-pub mod tlc;
-
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct ModuleManifest {
     pub name: &'static str,
