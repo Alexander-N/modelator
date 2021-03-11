@@ -22,7 +22,7 @@ local tla = {
   },
   operator(model, name): {
     call: "tla.operator",
-    args: [name],
+    args: [model, name],
   },
   negate(assertion): {
     call: "tla.negate",
@@ -88,6 +88,12 @@ tlc.test(model, config, test)
          "args": [
             {
                "args": [
+                  {
+                     "args": [
+                        "IBCTests.tla"
+                     ],
+                     "call": "tla.from_file"
+                  },
                   "ICS02CreateOKTest"
                ],
                "call": "tla.operator"
