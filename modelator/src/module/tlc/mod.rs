@@ -17,6 +17,10 @@ impl Tlc {
         options: &Options,
     ) -> Result<TlaTrace, Error> {
         tracing::debug!("Tlc::test {} {} {:?}", tla_file, tla_config_file, options);
+        // check that the tla file and tla cfg file exist
+        crate::util::check_file_exists(tla_file.path())?;
+        crate::util::check_file_exists(tla_config_file.path())?;
+
         // create tlc command
         let mut cmd = cmd(tla_file.path(), tla_config_file.path(), options);
 
@@ -93,6 +97,23 @@ impl Tlc {
                 panic!("[modelator] unexpected TLC's stdout/stderr combination")
             }
         }
+    }
+
+    // #[modelator::method]
+    pub fn explorer(
+        tla_file: TlaFile,
+        tla_config_file: TlaConfigFile,
+        // TODO: this should be extracted from `tla_file`
+        vars: Vec<String>,
+        options: &Options,
+    ) -> Result<(), Error> {
+        // check that the tla file and tla cfg file exist
+        crate::util::check_file_exists(tla_file.path())?;
+        crate::util::check_file_exists(tla_config_file.path())?;
+
+        println!("{:?}", vars);
+
+        Ok(())
     }
 }
 

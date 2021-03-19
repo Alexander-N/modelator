@@ -26,15 +26,9 @@ impl Tla {
         tla_config_file: TlaConfigFile,
     ) -> Result<Vec<(TlaFile, TlaConfigFile)>, Error> {
         tracing::debug!("Tla::generate_tests {} {}", tla_tests_file, tla_config_file);
-        // check that the tla tests file exists
-        if !tla_tests_file.path().is_file() {
-            return Err(Error::FileNotFound(tla_tests_file.path().clone()));
-        }
-
-        // check that the tla cfg file exists
-        if !tla_config_file.path().is_file() {
-            return Err(Error::FileNotFound(tla_config_file.path().clone()));
-        }
+        // check that the tla tests file and tla cfg file exist
+        crate::util::check_file_exists(tla_tests_file.path())?;
+        crate::util::check_file_exists(tla_config_file.path())?;
 
         // compute the directory in which the tla tests file is stored
         let mut tla_tests_dir = tla_tests_file.path().clone();

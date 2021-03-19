@@ -22,6 +22,10 @@ impl Apalache {
             tla_config_file,
             options
         );
+        // check that the tla file and tla cfg file exist
+        crate::util::check_file_exists(tla_file.path())?;
+        crate::util::check_file_exists(tla_config_file.path())?;
+
         // create apalache command
         let mut cmd = cmd(tla_file.path(), tla_config_file.path(), options);
 
