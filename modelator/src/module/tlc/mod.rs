@@ -1,6 +1,9 @@
 /// Parsing of TLC's output.
 mod output;
 
+/// Explorer functionality.
+mod explorer;
+
 use crate::artifact::{TlaConfigFile, TlaFile, TlaTrace};
 use crate::cache::TlaTraceCache;
 use crate::{jar, Error, ModelCheckerWorkers, Options};
@@ -118,16 +121,33 @@ impl Tlc {
         tla_config_file: TlaConfigFile,
         // TODO: this should be extracted from `tla_file`
         vars: Vec<String>,
-        options: &Options,
     ) -> Result<(), Error> {
         // check that the tla file and tla cfg file exist
         tla_file.check_existence()?;
         tla_config_file.check_existence()?;
 
+        // compute tla module name: it's safe to unwrap because we have already
+        // checked that the tests file is indeed a file
+        let tla_module_name = tla_file.tla_module_name().unwrap();
+
+        // create initial explorer module
+        let explorer = explorer::genereate_explorer_module(tla_module_name, &vars);
+        // create explorer config
+        let test_config = generate_test_config(tla_config_file, &invariant)?;
+        // let histories = vec![];
+
         println!("{:?}", vars);
 
         Ok(())
     }
+}
+
+use std::collections::HashMap;
+
+struct MachineState {
+    state: HashMap<String, String>,
+    history: Vec<HashMap<String, String>>,
+    next_states: Vec<MachineState>,
 }
 
 fn test_cmd<P: AsRef<Path>>(tla_file: P, tla_config_file: P, options: &Options) -> Command {

@@ -187,12 +187,10 @@ impl TlcMethods {
         tla_config_file: String,
         tla_variables: Vec<String>,
     ) -> Result<JsonValue, Error> {
-        let options = crate::Options::default();
         crate::module::Tlc::explorer(
             tla_file.into(),
             tla_config_file.into(),
             tla_variables,
-            &options,
         )?;
         Ok(JsonValue::Null)
     }
