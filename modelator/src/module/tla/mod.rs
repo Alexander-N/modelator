@@ -4,7 +4,7 @@ mod json;
 use crate::artifact::{JsonTrace, TlaConfigFile, TlaFile, TlaTrace};
 use crate::Error;
 use serde_json::Value as JsonValue;
-use std::path::PathBuf;
+use std::path::Path;
 
 // #[modelator::module]
 pub struct Tla;
@@ -26,9 +26,10 @@ impl Tla {
         tla_config_file: TlaConfigFile,
     ) -> Result<Vec<(TlaFile, TlaConfigFile)>, Error> {
         tracing::debug!("Tla::generate_tests {} {}", tla_tests_file, tla_config_file);
+
         // check that the tla tests file and tla cfg file exist
-        crate::util::check_file_exists(tla_tests_file.path())?;
-        crate::util::check_file_exists(tla_config_file.path())?;
+        tla_tests_file.check_existence()?;
+        tla_config_file.check_existence()?;
 
         // compute the directory in which the tla tests file is stored
         let mut tla_tests_dir = tla_tests_file.path().clone();
@@ -92,7 +93,7 @@ fn extract_test_names(tla_test_file: &TlaFile) -> Result<Vec<String>, Error> {
 }
 
 fn generate_test(
-    tla_tests_dir: &PathBuf,
+    tla_tests_dir: &Path,
     tla_tests_module_name: &str,
     test_name: &str,
     tla_config_file: &TlaConfigFile,
