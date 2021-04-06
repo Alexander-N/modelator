@@ -5,6 +5,7 @@ use crate::artifact::{JsonTrace, TlaConfigFile, TlaFile, TlaTrace};
 use crate::Error;
 use clap::{AppSettings, Clap, Subcommand};
 use serde_json::{json, Value as JsonValue};
+use std::collections::HashSet;
 use std::path::Path;
 
 /// A struct that generates a CLI for `modelator` using [`clap`].
@@ -58,6 +59,11 @@ enum ApalacheMethods {
         /// TLA+ file to be parsed.
         tla_file: String,
     },
+    /// Extract the TLA+ variables from a TLA+ file.
+    TlaVariables {
+        /// TLA+ file from where to extract TLA+ variables.
+        tla_file: String,
+    },
 }
 
 #[derive(Debug, Clap)]
@@ -76,9 +82,6 @@ enum TlcMethods {
         tla_file: String,
         /// TLA+ config file.
         tla_config_file: String,
-        /// TLA+ variable names.
-        #[clap(long, required = true, min_values = 1)]
-        vars: Vec<String>,
     },
 }
 
@@ -153,6 +156,7 @@ impl ApalacheMethods {
                 tla_config_file,
             } => Self::test(tla_file, tla_config_file),
             Self::Parse { tla_file } => Self::parse(tla_file),
+            Self::TlaVariables { tla_file } => Self::tla_variables(tla_file),
         }
     }
 
@@ -176,6 +180,16 @@ impl ApalacheMethods {
 
         parsed_tla_file(tla_file_parsed)
     }
+
+    fn tla_variables(tla_file: String) -> Result<JsonValue, Error> {
+        let options = crate::Options::default();
+        use std::convert::TryFrom;
+        let tla_file = TlaFile::try_from(tla_file)?;
+        let tla_variables = crate::module::Apalache::tla_variables(tla_file, &options)?;
+        tracing::debug!("Apalache::tla_variables output {:?}", tla_variables);
+
+        extracted_tla_variables(tla_variables)
+    }
 }
 
 impl TlcMethods {
@@ -188,8 +202,7 @@ impl TlcMethods {
             Self::Explorer {
                 tla_file,
                 tla_config_file,
-                vars,
-            } => Self::explorer(tla_file, tla_config_file, vars),
+            } => Self::explorer(tla_file, tla_config_file),
         }
     }
 
@@ -204,16 +217,11 @@ impl TlcMethods {
         save_tla_trace(tla_trace)
     }
 
-    fn explorer(
-        tla_file: String,
-        tla_config_file: String,
-        tla_variables: Vec<String>,
-    ) -> Result<JsonValue, Error> {
-        crate::module::Tlc::explorer(
-            tla_file.into(),
-            tla_config_file.into(),
-            tla_variables,
-        )?;
+    fn explorer(tla_file: String, tla_config_file: String) -> Result<JsonValue, Error> {
+        use std::convert::TryFrom;
+        let tla_file = TlaFile::try_from(tla_file)?;
+        let tla_config_file = TlaConfigFile::try_from(tla_config_file)?;
+        crate::module::Tlc::explorer(tla_file, tla_config_file)?;
         Ok(JsonValue::Null)
     }
 }
@@ -253,5 +261,12 @@ fn save_json_trace(json_trace: JsonTrace) -> Result<JsonValue, Error> {
 fn parsed_tla_file(tla_file_parsed: TlaFile) -> Result<JsonValue, Error> {
     Ok(json!({
         "tla_file": format!("{}", tla_file_parsed),
+    }))
+}
+
+#[allow(clippy::unnecessary_wraps)]
+fn extracted_tla_variables(tla_variables: HashSet<String>) -> Result<JsonValue, Error> {
+    Ok(json!({
+        "tla_variables": tla_variables,
     }))
 }

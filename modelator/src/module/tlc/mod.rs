@@ -133,25 +133,18 @@ impl Tlc {
         }
     }
 
-    // #[modelator::method]
-    pub fn explorer(
-        tla_file: TlaFile,
-        tla_config_file: TlaConfigFile,
-        // TODO: this should be extracted from `tla_file`
-        vars: Vec<String>,
-    ) -> Result<(), Error> {
-        // check that the tla file and tla cfg file exist
-        tla_file.check_existence()?;
-        tla_config_file.check_existence()?;
+    pub fn explorer(tla_file: TlaFile, tla_config_file: TlaConfigFile) -> Result<(), Error> {
+        // TODO: extract vars using Apalache
+        let vars = Vec::new();
 
         // compute tla module name: it's safe to unwrap because we have already
         // checked that the tests file is indeed a file
         let tla_module_name = tla_file.tla_module_name().unwrap();
 
         // create initial explorer module
-        let explorer = explorer::genereate_explorer_module(tla_module_name, &vars);
+        let explorer = explorer::genereate_explorer_module(&tla_module_name, &vars);
         // create explorer config
-        let test_config = generate_test_config(tla_config_file, &invariant)?;
+        // let test_config = generate_test_config(tla_config_file, &invariant)?;
         // let histories = vec![];
 
         println!("{:?}", vars);

@@ -5,6 +5,7 @@ use modelator::artifact::{JsonTrace, TlaFile};
 use modelator::{CliOptions, CliStatus, Error, ModelChecker, ModelCheckerOptions, Options};
 use once_cell::sync::Lazy;
 use serde_json::{json, Value as JsonValue};
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
@@ -38,7 +39,7 @@ fn all_tests(model_checker: ModelChecker) -> Result<(), Error> {
     // create all tests
     let tests = vec![numbers_a_max_b_min_test(), numbers_a_min_b_max_test()];
 
-    for (tla_tests_file, tla_config_file, expected) in tests {
+    for (tla_tests_file, tla_config_file, expected, expected_tla_variables) in tests {
         for (tla_tests_file, tla_config_file) in
             absolute_and_relative_paths(tla_tests_file, tla_config_file)
         {
@@ -56,13 +57,19 @@ fn all_tests(model_checker: ModelChecker) -> Result<(), Error> {
             let trace = traces.pop().unwrap();
             assert_eq!(trace, expected);
 
-            // parse file if apalache and simply assert it works
+            // TODO: the following should be performed using the CLI as well
             if model_checker == ModelChecker::Apalache {
+                // parse file if apalache and simply assert it works
                 use std::convert::TryFrom;
                 let tla_tests_file = TlaFile::try_from(tla_tests_file).unwrap();
                 let tla_parsed_file =
-                    modelator::module::Apalache::parse(tla_tests_file, &options).unwrap();
+                    modelator::module::Apalache::parse(tla_tests_file.clone(), &options).unwrap();
                 std::fs::remove_file(tla_parsed_file.path()).unwrap();
+
+                // extract tla variables and check that they match the expected
+                let tla_variables =
+                    modelator::module::Apalache::tla_variables(tla_tests_file, &options).unwrap();
+                assert_eq!(tla_variables, expected_tla_variables);
             }
         }
     }
@@ -186,7 +193,7 @@ fn absolute_and_relative_paths(
     ]
 }
 
-fn numbers_a_max_b_min_test() -> (&'static str, &'static str, JsonTrace) {
+fn numbers_a_max_b_min_test() -> (&'static str, &'static str, JsonTrace, HashSet<String>) {
     let tla_tests_file = "NumbersAMaxBMinTest.tla";
     let tla_config_file = "Numbers.cfg";
     let expected: Vec<_> = (0..=10)
@@ -197,10 +204,17 @@ fn numbers_a_max_b_min_test() -> (&'static str, &'static str, JsonTrace) {
             })
         })
         .collect();
-    (tla_tests_file, tla_config_file, expected.into())
+    use std::iter::FromIterator;
+    let expected_tla_variables = HashSet::from_iter(vec!["a".to_string(), "b".to_string()]);
+    (
+        tla_tests_file,
+        tla_config_file,
+        expected.into(),
+        expected_tla_variables,
+    )
 }
 
-fn numbers_a_min_b_max_test() -> (&'static str, &'static str, JsonTrace) {
+fn numbers_a_min_b_max_test() -> (&'static str, &'static str, JsonTrace, HashSet<String>) {
     let tla_tests_file = "NumbersAMinBMaxTest.tla";
     let tla_config_file = "Numbers.cfg";
     let expected: Vec<_> = (0..=10)
@@ -212,5 +226,12 @@ fn numbers_a_min_b_max_test() -> (&'static str, &'static str, JsonTrace) {
             })
         })
         .collect();
-    (tla_tests_file, tla_config_file, expected.into())
+    use std::iter::FromIterator;
+    let expected_tla_variables = HashSet::from_iter(vec!["a".to_string(), "b".to_string()]);
+    (
+        tla_tests_file,
+        tla_config_file,
+        expected.into(),
+        expected_tla_variables,
+    )
 }
