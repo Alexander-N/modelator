@@ -1,7 +1,7 @@
 // We follow the approach proposed in the following link for integration tests:
 // https://matklad.github.io/2021/02/27/delete-cargo-integration-tests.html
 
-use modelator::artifact::JsonTrace;
+use modelator::artifact::{JsonTrace, TlaFile};
 use modelator::{CliOptions, CliStatus, Error, ModelChecker, ModelCheckerOptions, Options};
 use once_cell::sync::Lazy;
 use serde_json::{json, Value as JsonValue};
@@ -43,14 +43,14 @@ fn all_tests(model_checker: ModelChecker) -> Result<(), Error> {
             absolute_and_relative_paths(tla_tests_file, tla_config_file)
         {
             // generate traces using Rust API
-            let mut traces = modelator::traces(&tla_tests_file, &tla_config_file, options.clone())?;
+            let mut traces = modelator::traces(&tla_tests_file, &tla_config_file, &options)?;
             // extract single trace
             assert_eq!(traces.len(), 1, "a single trace should have been generated");
             let trace = traces.pop().unwrap();
             assert_eq!(trace, expected);
 
             // generate traces using CLI
-            let mut traces = cli_traces(&tla_tests_file, &tla_config_file, options.clone())?;
+            let mut traces = cli_traces(&tla_tests_file, &tla_config_file, &options)?;
             // extract single trace
             assert_eq!(traces.len(), 1, "a single trace should have been generated");
             let trace = traces.pop().unwrap();
@@ -58,8 +58,10 @@ fn all_tests(model_checker: ModelChecker) -> Result<(), Error> {
 
             // parse file if apalache and simply assert it works
             if model_checker == ModelChecker::Apalache {
+                use std::convert::TryFrom;
+                let tla_tests_file = TlaFile::try_from(tla_tests_file).unwrap();
                 let tla_parsed_file =
-                    modelator::module::Apalache::parse(tla_tests_file.into(), &options).unwrap();
+                    modelator::module::Apalache::parse(tla_tests_file, &options).unwrap();
                 std::fs::remove_file(tla_parsed_file.path()).unwrap();
             }
         }
@@ -70,7 +72,7 @@ fn all_tests(model_checker: ModelChecker) -> Result<(), Error> {
 fn cli_traces<P: AsRef<Path>>(
     tla_tests_file: P,
     tla_config_file: P,
-    options: Options,
+    options: &Options,
 ) -> Result<Vec<JsonTrace>, Error> {
     use clap::Clap;
     // run CLI to generate tests

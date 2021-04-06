@@ -7,11 +7,33 @@ use crate::{jar, Error, Options};
 use std::path::Path;
 use std::process::Command;
 
-// #[modelator::module]
+/// `modelator`'s Apalache module.
+#[derive(Debug, Clone, Copy)]
 pub struct Apalache;
 
 impl Apalache {
-    // #[modelator::method]
+    /// Generate a TLA+ trace given a [TlaFile] and a [TlaConfigFile] produced
+    /// by [crate::module::Tla::generate_tests].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use modelator::artifact::{TlaFile, TlaConfigFile};
+    /// use modelator::module::{Tla, Apalache};
+    /// use modelator::Options;
+    /// use std::convert::TryFrom;
+    ///
+    /// let tla_tests_file = "tests/integration/tla/NumbersAMaxBMinTest.tla";
+    /// let tla_config_file = "tests/integration/tla/Numbers.cfg";
+    /// let tla_tests_file = TlaFile::try_from(tla_tests_file).unwrap();
+    /// let tla_config_file = TlaConfigFile::try_from(tla_config_file).unwrap();
+    ///
+    /// let mut tests = Tla::generate_tests(tla_tests_file, tla_config_file).unwrap();
+    /// let (tla_test_file, tla_test_config_file) = tests.pop().unwrap();
+    /// let options = Options::default();
+    /// let tla_trace = Apalache::test(tla_test_file, tla_test_config_file, &options).unwrap();
+    /// println!("{:?}", tla_trace);
+    /// ```
     pub fn test(
         tla_file: TlaFile,
         tla_config_file: TlaConfigFile,
@@ -23,10 +45,6 @@ impl Apalache {
             tla_config_file,
             options
         );
-
-        // check that the tla file and tla cfg file exist
-        tla_file.check_existence()?;
-        tla_config_file.check_existence()?;
 
         // load cache and check if the result is cached
         let mut cache = TlaTraceCache::new(options)?;
@@ -56,24 +74,47 @@ impl Apalache {
         }
     }
 
-    // #[modelator::method]
+    /// Runs Apalache's `parse` command, returning the [TlaFile] produced by
+    /// Apalache.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use modelator::artifact::TlaFile;
+    /// use modelator::module::Apalache;
+    /// use modelator::Options;
+    /// use std::convert::TryFrom;
+    ///
+    /// let tla_file = "tests/integration/tla/NumbersAMaxBMinTest.tla";
+    /// let tla_file = TlaFile::try_from(tla_file).unwrap();
+    ///
+    /// let options = Options::default();
+    /// let mut tla_parsed_file = Apalache::parse(tla_file, &options).unwrap();
+    /// println!("{:?}", tla_parsed_file);
+    /// ```
     pub fn parse(tla_file: TlaFile, options: &Options) -> Result<TlaFile, Error> {
         tracing::debug!("Apalache::parse {} {:?}", tla_file, options);
 
-        // check that the tla file and tla cfg file exist
-        tla_file.check_existence()?;
+        // compute the directory in which the tla file is stored
+        let mut tla_dir = tla_file.path().clone();
+        assert!(tla_dir.pop());
 
-        // compute the output tla file; it's okay to unwrap as we have already
+        // compute tla module name: it's okay to unwrap as we have already
         // verified that the file exists
         let tla_module_name = tla_file.tla_module_name().unwrap();
-        let tla_parsed_file: TlaFile = format!("{}Parsed.tla", tla_module_name).into();
+
+        // compute the output tla file
+        let tla_parsed_file = tla_dir.join(format!("{}Parsed.tla", tla_module_name));
 
         // create apalache parse command
-        let cmd = parse_cmd(tla_file.path(), tla_parsed_file.path(), options);
+        let cmd = parse_cmd(tla_file.path(), &tla_parsed_file, options);
 
         // run apalache
         run_apalache(cmd, options)?;
 
+        // create tla file
+        use std::convert::TryFrom;
+        let tla_parsed_file = TlaFile::try_from(tla_parsed_file)?;
         Ok(tla_parsed_file)
     }
 }
@@ -150,7 +191,7 @@ fn parse_cmd<P: AsRef<Path>>(tla_file: P, tla_parsed_file: P, options: &Options)
 }
 
 fn apalache_cmd_start<P: AsRef<Path>>(tla_file: P, options: &Options) -> Command {
-    let apalache = jar::Jar::Apalache.file(&options.dir);
+    let apalache = jar::Jar::Apalache.path(&options.dir);
 
     let mut cmd = Command::new("java");
 
