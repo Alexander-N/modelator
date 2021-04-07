@@ -1,7 +1,11 @@
+mod history;
+mod graph;
+
 use crate::artifact::TlaConfigFile;
+use std::collections::HashSet;
 use crate::Error;
 
-pub(crate) fn genereate_explorer_module(tla_module_name: &str, vars: &Vec<String>) -> String {
+pub(crate) fn generate_explorer_module(tla_module_name: &str, vars: &HashSet<String>) -> String {
     format!(
         r#"
 ---------- MODULE Explore ----------
@@ -50,12 +54,12 @@ INVARIANT {}
     ))
 }
 
-fn history_entry_tla_definition_call(vars: &Vec<String>) -> String {
-    let args = vars.clone().join(", ");
+fn history_entry_tla_definition_call(vars: &HashSet<String>) -> String {
+    let args = vars.iter().cloned().collect::<Vec<_>>().join(", ");
     format!("HistoryEntry({})", args)
 }
 
-fn history_entry_tla_definition(vars: &Vec<String>) -> String {
+fn history_entry_tla_definition(vars: &HashSet<String>) -> String {
     let args = vars
         .iter()
         .map(|var| format!("{}_value", var))

@@ -218,10 +218,11 @@ impl TlcMethods {
     }
 
     fn explorer(tla_file: String, tla_config_file: String) -> Result<JsonValue, Error> {
+        let options = crate::Options::default();
         use std::convert::TryFrom;
         let tla_file = TlaFile::try_from(tla_file)?;
         let tla_config_file = TlaConfigFile::try_from(tla_config_file)?;
-        crate::module::Tlc::explorer(tla_file, tla_config_file)?;
+        crate::module::Tlc::explorer(tla_file, tla_config_file, options)?;
         Ok(JsonValue::Null)
     }
 }

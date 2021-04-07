@@ -133,16 +133,16 @@ impl Tlc {
         }
     }
 
-    pub fn explorer(tla_file: TlaFile, tla_config_file: TlaConfigFile) -> Result<(), Error> {
-        // TODO: extract vars using Apalache
-        let vars = Vec::new();
+    pub fn explorer(tla_file: TlaFile, tla_config_file: TlaConfigFile, options: Options) -> Result<(), Error> {
+        // extract TLA+ variables using Apalache
+        let vars = crate::module::Apalache::tla_variables(tla_file.clone(), &options)?;
 
         // compute tla module name: it's safe to unwrap because we have already
         // checked that the tests file is indeed a file
         let tla_module_name = tla_file.tla_module_name().unwrap();
 
         // create initial explorer module
-        let explorer = explorer::genereate_explorer_module(&tla_module_name, &vars);
+        let explorer = explorer::generate_explorer_module(&tla_module_name, &vars);
         // create explorer config
         // let test_config = generate_test_config(tla_config_file, &invariant)?;
         // let histories = vec![];
@@ -153,13 +153,6 @@ impl Tlc {
     }
 }
 
-use std::collections::HashMap;
-
-struct MachineState {
-    state: HashMap<String, String>,
-    history: Vec<HashMap<String, String>>,
-    next_states: Vec<MachineState>,
-}
 
 fn test_cmd<P: AsRef<Path>>(tla_file: P, tla_config_file: P, options: &Options) -> Command {
     let tla2tools = jar::Jar::Tla.path(&options.dir);
