@@ -1,5 +1,4 @@
 mod graph;
-mod history;
 
 use crate::artifact::TlaConfigFile;
 use crate::Error;

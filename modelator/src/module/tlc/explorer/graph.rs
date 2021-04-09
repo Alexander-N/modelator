@@ -1,110 +1,128 @@
 use petgraph::graph::{Graph as PetGraph, NodeIndex};
 use std::collections::{HashMap, HashSet};
+use std::fmt::Debug;
 use std::hash::Hash;
+
+pub(crate) struct NextStates<S> {
+    /// Mapping from state `S` to a list of next states.
+    next_states: HashMap<S, Vec<S>>,
+}
+
+impl<S> NextStates<S>
+where
+    S: Eq + Hash + Clone + Debug,
+{
+    /// Creates a new graph.
+    pub(crate) fn new() -> Self {
+        Self {
+            next_states: HashMap::new(),
+        }
+    }
+
+    /// Adds a new `next_state` to `state`.
+    pub(crate) fn add_next_state(&mut self, state: S, next_state: S) {
+        let next_states = self.next_states.entry(state).or_default();
+        debug_assert!(
+            next_states.iter().all(|s| s != &next_state),
+            "[modelator] unexpected repeated next state"
+        );
+        next_states.push(next_state);
+    }
+
+    /// Retrieves the set of next states of `state`.
+    pub(crate) fn get_next_states(&mut self, state: &S) -> Option<&Vec<S>> {
+        self.next_states.get(state)
+    }
+
+    /// Dot representation of self when viewed as a state graph.
+    pub(crate) fn dot(&self) -> String {
+        let mut state_graph = StateGraph::new();
+        for (state, next_states) in self.next_states.iter() {
+            for next_state in next_states {
+                let state = format!("{:?}", state);
+                let next_state = format!("{:?}", next_state);
+                state_graph.add_neighbor(state, next_state);
+            }
+        }
+        state_graph.dot()
+    }
+}
 
 // we don't care about weights, so we use unit for them
 type WeightType = ();
 const WEIGHT: WeightType = ();
 
-pub(crate) struct Graph<N> {
-    /// Mapping from the node data `N` to its index
-    nodes: HashMap<N, NodeIndex>,
-    /// Graph data. We use the node data `N` as the node weight, which allows us
-    /// to have the inverse of the mapping above using `self.graph.node_weight`.
-    graph: PetGraph<N, WeightType>,
+pub(crate) struct StateGraph<S> {
+    /// Mapping from the node state `S` to its graph index.
+    nodes: HashMap<S, NodeIndex>,
+    /// Graph data. We use the node state `S` as the node weight, which allows
+    /// us to have the inverse of the mapping above using `self.graph.node_weight`.
+    graph: PetGraph<WeightType, WeightType>,
 }
 
-impl<N> Graph<N>
+impl<S> StateGraph<S>
 where
-    N: Eq + Hash + Clone,
+    S: Eq + Hash + Debug,
 {
-    /// Creates a new graph.
-    pub(crate) fn new() -> Self {
+    /// Creates a new state graph.
+    fn new() -> Self {
         Self {
             nodes: HashMap::new(),
             graph: PetGraph::new(),
         }
     }
 
-    /// Adds a new path (in case it hasn't been added) to the graph.
-    pub(crate) fn add_path(&mut self, path: Vec<N>) {
-        let mut path_iter = path.into_iter();
-        if let Some(mut previous_node) = path_iter.next() {
-            // if the path is non-empty, then iterate the remaining nodes in the
-            // path and add an edge between consecutive nodes
-            for node in path_iter {
-                self.add_edge(&previous_node, &node);
-                previous_node = node;
-            }
-        }
+    /// Adds a `next_state` to `state`.
+    fn add_neighbor(&mut self, state: S, next_state: S) {
+        let node_index = self.add_node(state);
+        let neighbor_index = self.add_node(next_state);
+        self.add_edge(node_index, neighbor_index);
     }
 
-    /// Computes all paths starting from node `from` with a length up to `max_len`.
-    pub(crate) fn all_paths(&self, from: &N, max_len: usize) -> HashSet<Vec<N>> {
-        if max_len == 0 {
-            return HashSet::new();
-        }
-
-        let mut result = HashSet::new();
-        if let Some(from_index) = self.nodes.get(from) {
-            // if the node `from` exists, compute paths starting with it
-            self.do_all_paths(*from_index, max_len, Vec::new(), &mut result);
-        }
-        result
-    }
-
-    /// Perform a depth-first-search until the path traversed reaches the
-    /// supplied max length.
-    fn do_all_paths(
-        &self,
-        node_index: NodeIndex,
-        max_len: usize,
-        mut path: Vec<N>,
-        result: &mut HashSet<Vec<N>>,
-    ) {
-        // retrieve node data
-        let node = self
-            .graph
-            .node_weight(node_index)
-            .expect("[modelator] indexed node should exist in the graph")
-            .clone();
-        // add `node` to the path
-        path.push(node);
-
-        // add new path to results
-        assert!(
-            result.insert(path.clone()),
-            "[modelator] paths cannot be duplicated"
+    /// Dot representation of this state graph.
+    fn dot(self) -> String {
+        // reverse `self.nodes` mapping
+        let nodes_len = self.nodes.len();
+        let mut index_to_node: HashMap<_, _> =
+            self.nodes.into_iter().map(|(k, v)| (v, k)).collect();
+        assert_eq!(
+            nodes_len,
+            index_to_node.len(),
+            "[modelator] reversed index should have the same length as values are unique"
         );
 
-        // if we have reached the max path length, give up
-        if path.len() == max_len {
-            return;
-        }
+        // create a new graph, setting for each node their TLA+ state.
+        let graph = self.graph.map(
+            |node_index, _| {
+                index_to_node
+                    .remove(&node_index)
+                    .expect("[modelator] graph node must be indexed")
+            },
+            |_, e| e,
+        );
 
-        for neighbor_index in self.graph.neighbors(node_index) {
-            self.do_all_paths(neighbor_index, max_len, path.clone(), result);
-        }
+        // show no label for edges
+        let config = &[petgraph::dot::Config::EdgeNoLabel];
+        let dot = petgraph::dot::Dot::with_config(&graph, config);
+        format!("{:?}", dot)
     }
 
     /// Adds a new edge (in case it hasn't been added) to the graph.
-    fn add_edge(&mut self, from: &N, to: &N) {
-        let from = self.node_index(from);
-        let to = self.node_index(to);
+    fn add_edge(&mut self, from: NodeIndex, to: NodeIndex) {
         // by using `update_edge`, we ensure that the edge is never duplicated
         self.graph.update_edge(from, to, WEIGHT);
     }
 
     /// Adds a new node (in case it hasn't been added) to the graph and
     /// retrieves its index.
-    fn node_index(&mut self, node: &N) -> NodeIndex {
+    fn add_node(&mut self, node: S) -> NodeIndex {
         if let Some(index) = self.nodes.get(&node) {
             // retrieve index if the node already exists
             *index
         } else {
             // otherwise, insert the node and return the newly assigned index
-            let index = self.graph.add_node(node.clone());
-            self.nodes.insert(node.clone(), index);
+            let index = self.graph.add_node(WEIGHT);
+            self.nodes.insert(node, index);
             index
         }
     }
@@ -113,133 +131,44 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::iter::FromIterator;
-
-    fn entry(
-        a: impl Into<Option<usize>>,
-        b: impl Into<Option<usize>>,
-    ) -> (Option<usize>, Option<usize>) {
-        (a.into(), b.into())
-    }
 
     #[test]
-    fn all_paths_test() {
-        let mut graph = Graph::new();
-        let start_node = entry(None, None);
-        let history0 = vec![start_node];
-        let history1 = vec![start_node, entry(0, 0)];
-        let history2 = vec![start_node, entry(0, 0), entry(1, 0)];
-        let history3 = vec![start_node, entry(0, 0), entry(0, 2)];
-        let history4 = vec![start_node, entry(0, 0), entry(0, 0)];
-        let history5 = vec![start_node, entry(0, 0), entry(0, 0), entry(1, 0)];
-        let history6 = vec![start_node, entry(0, 0), entry(0, 0), entry(0, 2)];
-        let history7 = vec![start_node, entry(0, 0), entry(0, 0), entry(0, 0)];
+    fn neighbors_test() {
+        let mut next_states = NextStates::new();
 
-        graph.add_path(history0.clone());
-        assert_eq!(
-            graph.all_paths(&start_node, 1),
-            HashSet::from_iter(vec![history0.clone()])
-        );
-        assert_eq!(
-            graph.all_paths(&start_node, 2),
-            HashSet::from_iter(vec![history0.clone()])
-        );
+        assert_eq!(next_states.get_next_states(&1), None);
+        assert_eq!(next_states.get_next_states(&2), None);
+        assert_eq!(next_states.get_next_states(&3), None);
+        assert_eq!(next_states.get_next_states(&4), None);
 
-        graph.add_path(history1.clone());
-        assert_eq!(
-            graph.all_paths(&start_node, 1),
-            HashSet::from_iter(vec![history0.clone()])
-        );
-        assert_eq!(
-            graph.all_paths(&start_node, 2),
-            HashSet::from_iter(vec![history0.clone(), history1.clone()])
-        );
-        assert_eq!(
-            graph.all_paths(&start_node, 3),
-            HashSet::from_iter(vec![history0.clone(), history1.clone()])
-        );
+        next_states.add_next_state(1, 2);
+        assert_eq!(next_states.get_next_states(&1), Some(&vec![2]));
+        assert_eq!(next_states.get_next_states(&2), None);
+        assert_eq!(next_states.get_next_states(&3), None);
+        assert_eq!(next_states.get_next_states(&4), None);
 
-        graph.add_path(history2.clone());
-        assert_eq!(
-            graph.all_paths(&start_node, 1),
-            HashSet::from_iter(vec![history0.clone()])
-        );
-        assert_eq!(
-            graph.all_paths(&start_node, 2),
-            HashSet::from_iter(vec![history0.clone(), history1.clone()])
-        );
-        assert_eq!(
-            graph.all_paths(&start_node, 3),
-            HashSet::from_iter(vec![history0.clone(), history1.clone(), history2.clone()])
-        );
-        assert_eq!(
-            graph.all_paths(&start_node, 4),
-            HashSet::from_iter(vec![history0.clone(), history1.clone(), history2.clone()])
-        );
+        next_states.add_next_state(1, 3);
+        assert_eq!(next_states.get_next_states(&1), Some(&vec![2, 3]));
+        assert_eq!(next_states.get_next_states(&2), None);
+        assert_eq!(next_states.get_next_states(&3), None);
+        assert_eq!(next_states.get_next_states(&4), None);
 
-        graph.add_path(history3.clone());
-        assert_eq!(
-            graph.all_paths(&start_node, 1),
-            HashSet::from_iter(vec![history0.clone()])
-        );
-        assert_eq!(
-            graph.all_paths(&start_node, 2),
-            HashSet::from_iter(vec![history0.clone(), history1.clone()])
-        );
-        assert_eq!(
-            graph.all_paths(&start_node, 3),
-            HashSet::from_iter(vec![
-                history0.clone(),
-                history1.clone(),
-                history2.clone(),
-                history3.clone()
-            ])
-        );
-        assert_eq!(
-            graph.all_paths(&start_node, 4),
-            HashSet::from_iter(vec![
-                history0.clone(),
-                history1.clone(),
-                history2.clone(),
-                history3.clone()
-            ])
-        );
+        next_states.add_next_state(2, 4);
+        assert_eq!(next_states.get_next_states(&1), Some(&vec![2, 3]));
+        assert_eq!(next_states.get_next_states(&2), Some(&vec![4]));
+        assert_eq!(next_states.get_next_states(&3), None);
+        assert_eq!(next_states.get_next_states(&4), None);
 
-        // here we add a cycle, so we already have infinite paths.
-        // this is nice because it means we can avoid some queries to the model
-        // checker (e.g., after seeing history4, given the previous histories,
-        // we can guess history5, history6 and history7)
-        graph.add_path(history4.clone());
-        assert_eq!(
-            graph.all_paths(&start_node, 1),
-            HashSet::from_iter(vec![history0.clone()])
-        );
-        assert_eq!(
-            graph.all_paths(&start_node, 2),
-            HashSet::from_iter(vec![history0.clone(), history1.clone()])
-        );
-        assert_eq!(
-            graph.all_paths(&start_node, 3),
-            HashSet::from_iter(vec![
-                history0.clone(),
-                history1.clone(),
-                history2.clone(),
-                history3.clone(),
-                history4.clone()
-            ])
-        );
-        assert_eq!(
-            graph.all_paths(&start_node, 4),
-            HashSet::from_iter(vec![
-                history0.clone(),
-                history1.clone(),
-                history2.clone(),
-                history3.clone(),
-                history4.clone(),
-                history5.clone(),
-                history6.clone(),
-                history7.clone(),
-            ])
-        );
+        next_states.add_next_state(3, 4);
+        assert_eq!(next_states.get_next_states(&1), Some(&vec![2, 3]));
+        assert_eq!(next_states.get_next_states(&2), Some(&vec![4]));
+        assert_eq!(next_states.get_next_states(&3), Some(&vec![4]));
+        assert_eq!(next_states.get_next_states(&4), None);
+
+        next_states.add_next_state(4, 1);
+        assert_eq!(next_states.get_next_states(&1), Some(&vec![2, 3]));
+        assert_eq!(next_states.get_next_states(&2), Some(&vec![4]));
+        assert_eq!(next_states.get_next_states(&3), Some(&vec![4]));
+        assert_eq!(next_states.get_next_states(&4), Some(&vec![1]));
     }
 }
