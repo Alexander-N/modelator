@@ -14,9 +14,9 @@ pub(crate) struct Cache {
 }
 
 impl Cache {
-    pub(crate) fn new(options: &Options) -> Result<Self, Error> {
+    pub(crate) fn new(name: impl Into<String>, options: &Options) -> Result<Self, Error> {
         // create cache dir (if it doesn't exist)
-        let cache_dir = options.dir.join("cache");
+        let cache_dir = options.dir.join("cache").join(name.into());
         std::fs::create_dir_all(&cache_dir).map_err(Error::io)?;
 
         // read files the cache directory
@@ -74,7 +74,8 @@ mod tests {
         let options = Options::default().dir(modelator_dir);
 
         // create cache
-        let mut cache = Cache::new(&options).unwrap();
+        let cache_name = "my_cache";
+        let mut cache = Cache::new(cache_name, &options).unwrap();
 
         let key_a = "A".to_string();
         let value_a = "some value for A".to_string();
@@ -92,7 +93,7 @@ mod tests {
         assert!(cache.get(&key_b).unwrap().is_none());
 
         // start a new cache a check that it reads the cached keys from disk
-        let cache = Cache::new(&options).unwrap();
+        let cache = Cache::new(cache_name, &options).unwrap();
         assert_eq!(cache.get(&key_a).unwrap(), Some(value_a));
         assert!(cache.get(&key_b).unwrap().is_none());
 

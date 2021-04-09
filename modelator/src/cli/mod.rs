@@ -66,6 +66,9 @@ enum ApalacheMethods {
     },
 }
 
+const NEXT_STATES_COUNT: &str = "10";
+const NEXT_STATES_SKIP: &str = "0";
+
 #[derive(Debug, Clap)]
 #[clap(setting = AppSettings::DisableHelpSubcommand)]
 enum TlcMethods {
@@ -77,11 +80,22 @@ enum TlcMethods {
         tla_config_file: String,
     },
     /// Explore a TLA+ model.
-    Explorer {
+    NextStates {
         /// TLA+ file.
         tla_file: String,
         /// TLA+ config file.
         tla_config_file: String,
+        /// TLA+ state from where to start. If not set, then initial TLA+ state
+        /// will be used. TLA+ states returned by previous invokations of this
+        /// command can be used as argument here.
+        #[clap(short, long)]
+        start_state: Option<String>,
+        /// Maximum number of next states to return.
+        #[clap(long, default_value = NEXT_STATES_COUNT)]
+        count: usize,
+        /// Number of next states to be skipped (for pagination).
+        #[clap(long, default_value = NEXT_STATES_SKIP)]
+        skip: usize,
     },
 }
 
@@ -199,10 +213,13 @@ impl TlcMethods {
                 tla_file,
                 tla_config_file,
             } => Self::test(tla_file, tla_config_file),
-            Self::Explorer {
+            Self::NextStates {
                 tla_file,
                 tla_config_file,
-            } => Self::explorer(tla_file, tla_config_file),
+                start_state,
+                count,
+                skip,
+            } => Self::next_states(tla_file, tla_config_file, start_state, count, skip),
         }
     }
 
@@ -217,12 +234,25 @@ impl TlcMethods {
         save_tla_trace(tla_trace)
     }
 
-    fn explorer(tla_file: String, tla_config_file: String) -> Result<JsonValue, Error> {
+    fn next_states(
+        tla_file: String,
+        tla_config_file: String,
+        start_state: Option<String>,
+        count: usize,
+        skip: usize,
+    ) -> Result<JsonValue, Error> {
         let options = crate::Options::default();
         use std::convert::TryFrom;
         let tla_file = TlaFile::try_from(tla_file)?;
         let tla_config_file = TlaConfigFile::try_from(tla_config_file)?;
-        crate::module::Tlc::explorer(tla_file, tla_config_file, options)?;
+        crate::module::Tlc::next_states(
+            tla_file,
+            tla_config_file,
+            start_state,
+            skip,
+            count,
+            options,
+        )?;
         Ok(JsonValue::Null)
     }
 }

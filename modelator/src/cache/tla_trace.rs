@@ -2,13 +2,15 @@ use super::Cache;
 use crate::artifact::{TlaConfigFile, TlaFile, TlaTrace};
 use crate::{Error, Options};
 
+const CACHE_NAME: &str = "tla_trace";
+
 pub(crate) struct TlaTraceCache {
     cache: Cache,
 }
 
 impl TlaTraceCache {
     pub(crate) fn new(options: &Options) -> Result<Self, Error> {
-        let cache = Cache::new(options)?;
+        let cache = Cache::new(CACHE_NAME, options)?;
         Ok(Self { cache })
     }
 

@@ -1,65 +1,92 @@
-mod history;
 mod graph;
+mod history;
 
 use crate::artifact::TlaConfigFile;
-use std::collections::HashSet;
 use crate::Error;
+use std::collections::HashSet;
 
-pub(crate) fn generate_explorer_module(tla_module_name: &str, vars: &HashSet<String>) -> String {
+pub(crate) fn generate_explorer_module(
+    tla_module_name: &str,
+    vars: &HashSet<String>,
+    start_state: &String,
+    known_next_states: &Vec<String>,
+) -> String {
     format!(
         r#"
 ---------- MODULE Explore ----------
 
-EXTENDS {}, Sequences
+EXTENDS {}
 
-VARIABLE history
+VARIABLE nextStates
 
+\* construct a representation of an explored TLA+ state
 {}
 
-History0 == <<
-    HistoryEntry("undefined", "undefined")
->>
+\* set of known next TLA+ states previously explored
+KnownNextStates == {}
 
+\* invariant stating that all `nextStates` must be already known; if we don't
+\* have yet all next states, the model checker will give us a new one
 Explore ==
-    /\ history \in {{History0}}
+    /\ nextStates \subseteq KnownNextStates
 
 InitExplore ==
-    /\ Init
-    /\ history = History0
+    \* the TLA+ state from where we should start the exploration
+    {}
+    \* the set of next states; if the model checker finds a violation of the
+    \* `Explore` invariant above where:
+    \* - `Len(nextStates) == 0`, then the start state has no next states
+    \* - `Len(nextStates) == 1`, then the state in the set is indeed a next
+    \* state of the start state
+    \* - `Len(nextStates) == 2`, then the model checker has already aplied
+    \* `Next` two times, meaning that we have already retrieved all the next
+    \* states
+    /\ nextStates = {{}}
 
 NextExplore ==
     /\ Next
-    /\ history' = Append(history, {})
+    /\ nextStates' = nextStates \\union {{{}}}
 
 ====================================
 "#,
         tla_module_name,
-        history_entry_tla_definition(&vars),
-        history_entry_tla_definition_call(&vars)
+        explored_state_tla_definition(&vars),
+        known_next_states_set(known_next_states),
+        start_state,
+        explored_state_tla_definition_call(&vars)
     )
 }
 
 pub(crate) fn generate_explorer_config(
     tla_config_file: &TlaConfigFile,
-    invariant: &str,
 ) -> Result<String, Error> {
-    // TODO: write a config parser: assume that only constant(s) and init/next are allowed and throw error otherwise
+    // TODO: write a config parser: assume that only constant(s) are allowed and
+    //       throw error otherwise
     let tla_config = std::fs::read_to_string(tla_config_file.path()).map_err(Error::io)?;
     Ok(format!(
         r#"
 {}
-INVARIANT {}
+INIT InitExplore
+NEXT NextExplore
+INVARIANT Explore
 "#,
-        tla_config, invariant
+        tla_config
     ))
 }
 
-fn history_entry_tla_definition_call(vars: &HashSet<String>) -> String {
-    let args = vars.iter().cloned().collect::<Vec<_>>().join(", ");
-    format!("HistoryEntry({})", args)
+fn explored_state_tla_definition_call(vars: &HashSet<String>) -> String {
+    let args = vars
+        .iter()
+        .map(|var| {
+            // tick var
+            format!("{}'", var)
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!("ExploredState({})", args)
 }
 
-fn history_entry_tla_definition(vars: &HashSet<String>) -> String {
+fn explored_state_tla_definition(vars: &HashSet<String>) -> String {
     let args = vars
         .iter()
         .map(|var| format!("{}_value", var))
@@ -67,16 +94,28 @@ fn history_entry_tla_definition(vars: &HashSet<String>) -> String {
         .join(", ");
     let history_vars = vars
         .iter()
-        .map(|var| format!("prev_{} |-> {}_value", var, var))
+        .map(|var| format!("{} |-> {}_value", var, var))
         .collect::<Vec<_>>()
         .join(",\n\t\t");
     format!(
         r#"
-HistoryEntry({}) ==
+ExploredState({}) ==
     [
         {}
     ]
 "#,
         args, history_vars
+    )
+}
+
+fn known_next_states_set(known_next_states: &Vec<String>) -> String {
+    let known_next_states = known_next_states.join(",\n\t\t");
+    format!(
+        r#"
+    {{
+        {}
+    }}
+"#,
+        known_next_states
     )
 }

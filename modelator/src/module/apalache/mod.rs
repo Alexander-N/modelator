@@ -183,6 +183,7 @@ fn parse_with_format(
     format: ApalacheParseFormat,
     options: &Options,
 ) -> Result<PathBuf, Error> {
+    // TODO: cache the result of this
     // compute the directory in which the tla file is stored
     let mut tla_dir = tla_file.path().clone();
     assert!(tla_dir.pop());

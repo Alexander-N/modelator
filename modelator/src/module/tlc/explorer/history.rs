@@ -1,5 +1,6 @@
 use super::graph::Graph;
 use std::collections::{BTreeMap, HashSet};
+use serde_json::Value as JsonValue;
 
 /// A TLA+ state is represented as a mapping from the TLA+ variable to the TLA+
 /// value associated with that variable.
@@ -20,7 +21,7 @@ pub(crate) struct Histories {
 }
 
 impl Histories {
-    /// Creates a new set of histories.
+    /// Creates a new set of [Histories].
     pub(crate) fn new(initial_state: TlaState) -> Self {
         Self {
             initial_state,
@@ -29,7 +30,7 @@ impl Histories {
         }
     }
 
-    /// Adds a new history to the set of `TlaStates`.
+    /// Adds a new history to the set of [Histories].
     pub(crate) fn add_history(&mut self, history: Vec<TlaState>) {
         self.max_history_len = std::cmp::max(self.max_history_len, history.len());
         self.graph.add_path(history);

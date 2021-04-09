@@ -49,7 +49,7 @@ where
         if let Some(from_index) = self.nodes.get(from) {
             // if the node `from` exists, compute paths starting with it
             self.do_all_paths(*from_index, max_len, Vec::new(), &mut result);
-        } 
+        }
         result
     }
 
@@ -137,57 +137,57 @@ mod tests {
 
         graph.add_path(history0.clone());
         assert_eq!(
-            graph.all_paths(start_node, 1),
+            graph.all_paths(&start_node, 1),
             HashSet::from_iter(vec![history0.clone()])
         );
         assert_eq!(
-            graph.all_paths(start_node, 2),
+            graph.all_paths(&start_node, 2),
             HashSet::from_iter(vec![history0.clone()])
         );
 
         graph.add_path(history1.clone());
         assert_eq!(
-            graph.all_paths(start_node, 1),
+            graph.all_paths(&start_node, 1),
             HashSet::from_iter(vec![history0.clone()])
         );
         assert_eq!(
-            graph.all_paths(start_node, 2),
+            graph.all_paths(&start_node, 2),
             HashSet::from_iter(vec![history0.clone(), history1.clone()])
         );
         assert_eq!(
-            graph.all_paths(start_node, 3),
+            graph.all_paths(&start_node, 3),
             HashSet::from_iter(vec![history0.clone(), history1.clone()])
         );
 
         graph.add_path(history2.clone());
         assert_eq!(
-            graph.all_paths(start_node, 1),
+            graph.all_paths(&start_node, 1),
             HashSet::from_iter(vec![history0.clone()])
         );
         assert_eq!(
-            graph.all_paths(start_node, 2),
+            graph.all_paths(&start_node, 2),
             HashSet::from_iter(vec![history0.clone(), history1.clone()])
         );
         assert_eq!(
-            graph.all_paths(start_node, 3),
+            graph.all_paths(&start_node, 3),
             HashSet::from_iter(vec![history0.clone(), history1.clone(), history2.clone()])
         );
         assert_eq!(
-            graph.all_paths(start_node, 4),
+            graph.all_paths(&start_node, 4),
             HashSet::from_iter(vec![history0.clone(), history1.clone(), history2.clone()])
         );
 
         graph.add_path(history3.clone());
         assert_eq!(
-            graph.all_paths(start_node, 1),
+            graph.all_paths(&start_node, 1),
             HashSet::from_iter(vec![history0.clone()])
         );
         assert_eq!(
-            graph.all_paths(start_node, 2),
+            graph.all_paths(&start_node, 2),
             HashSet::from_iter(vec![history0.clone(), history1.clone()])
         );
         assert_eq!(
-            graph.all_paths(start_node, 3),
+            graph.all_paths(&start_node, 3),
             HashSet::from_iter(vec![
                 history0.clone(),
                 history1.clone(),
@@ -196,7 +196,7 @@ mod tests {
             ])
         );
         assert_eq!(
-            graph.all_paths(start_node, 4),
+            graph.all_paths(&start_node, 4),
             HashSet::from_iter(vec![
                 history0.clone(),
                 history1.clone(),
@@ -211,15 +211,15 @@ mod tests {
         // we can guess history5, history6 and history7)
         graph.add_path(history4.clone());
         assert_eq!(
-            graph.all_paths(start_node, 1),
+            graph.all_paths(&start_node, 1),
             HashSet::from_iter(vec![history0.clone()])
         );
         assert_eq!(
-            graph.all_paths(start_node, 2),
+            graph.all_paths(&start_node, 2),
             HashSet::from_iter(vec![history0.clone(), history1.clone()])
         );
         assert_eq!(
-            graph.all_paths(start_node, 3),
+            graph.all_paths(&start_node, 3),
             HashSet::from_iter(vec![
                 history0.clone(),
                 history1.clone(),
@@ -229,7 +229,7 @@ mod tests {
             ])
         );
         assert_eq!(
-            graph.all_paths(start_node, 4),
+            graph.all_paths(&start_node, 4),
             HashSet::from_iter(vec![
                 history0.clone(),
                 history1.clone(),

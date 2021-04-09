@@ -133,26 +133,44 @@ impl Tlc {
         }
     }
 
-    pub fn explorer(tla_file: TlaFile, tla_config_file: TlaConfigFile, options: Options) -> Result<(), Error> {
+    /// TODO
+    pub fn next_states(
+        tla_file: TlaFile,
+        tla_config_file: TlaConfigFile,
+        start_state: Option<String>,
+        count: usize,
+        skip: usize,
+        options: Options,
+    ) -> Result<(), Error> {
         // extract TLA+ variables using Apalache
         let vars = crate::module::Apalache::tla_variables(tla_file.clone(), &options)?;
+
+        // TODO: error if `Init` and `Next` are not defined
+
+        // if set, start from it; otherwise, start from `Init`
+        let start_state = start_state.unwrap_or_else(|| "/\\ Init".to_string());
 
         // compute tla module name: it's safe to unwrap because we have already
         // checked that the tests file is indeed a file
         let tla_module_name = tla_file.tla_module_name().unwrap();
 
+        let known_next_states = Vec::new();
+
         // create initial explorer module
-        let explorer = explorer::generate_explorer_module(&tla_module_name, &vars);
+        let explorer_tla = explorer::generate_explorer_module(
+            &tla_module_name,
+            &vars,
+            &start_state,
+            &known_next_states,
+        );
         // create explorer config
-        // let test_config = generate_test_config(tla_config_file, &invariant)?;
-        // let histories = vec![];
+        let explorer_cfg = explorer::generate_explorer_config(&tla_config_file)?;
 
         println!("{:?}", vars);
 
         Ok(())
     }
 }
-
 
 fn test_cmd<P: AsRef<Path>>(tla_file: P, tla_config_file: P, options: &Options) -> Command {
     let tla2tools = jar::Jar::Tla.path(&options.dir);
