@@ -1,11 +1,11 @@
 // TLA+ module.
-mod tla;
+pub(crate) mod tla;
 
 // TLC module.
-mod tlc;
+pub(crate) mod tlc;
 
 // Apalache module.
-mod apalache;
+pub(crate) mod apalache;
 
 // Re-exports.
 pub use apalache::Apalache;

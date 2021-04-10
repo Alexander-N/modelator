@@ -1,7 +1,7 @@
 /// Parsing of Apalache's counterexample file.
 mod counterexample;
 
-use crate::artifact::{TlaConfigFile, TlaFile, TlaTrace};
+use crate::artifact::{TlaConfigFile, TlaFile, TlaTrace, TlaVariables};
 use crate::cache::TlaTraceCache;
 use crate::{jar, Error, Options};
 use serde_json::Value as JsonValue;
@@ -50,7 +50,7 @@ impl Apalache {
 
         // load cache and check if the result is cached
         let mut cache = TlaTraceCache::new(options)?;
-        let cache_key = TlaTraceCache::key(&tla_file, &tla_config_file)?;
+        let cache_key = crate::cache::key(&tla_file, &tla_config_file)?;
         if let Some(value) = cache.get(&cache_key)? {
             return Ok(value);
         }
@@ -127,7 +127,7 @@ impl Apalache {
     /// assert!(vars.contains("a"));
     /// assert!(vars.contains("b"));
     /// ```
-    pub fn tla_variables(tla_file: TlaFile, options: &Options) -> Result<HashSet<String>, Error> {
+    pub fn tla_variables(tla_file: TlaFile, options: &Options) -> Result<TlaVariables, Error> {
         tracing::debug!("Apalache::tla_variables {} {:?}", tla_file, options);
 
         // parse the tla file, producing a json representation of the parsed file
@@ -158,7 +158,7 @@ impl Apalache {
                 );
             }
         }
-        Ok(vars)
+        Ok(TlaVariables::new(vars))
     }
 }
 

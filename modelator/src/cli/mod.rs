@@ -1,11 +1,10 @@
 // CLI output.
 pub(crate) mod output;
 
-use crate::artifact::{JsonTrace, TlaConfigFile, TlaFile, TlaTrace};
+use crate::artifact::{JsonTrace, TlaVariables, TlaConfigFile, TlaFile, TlaTrace};
 use crate::Error;
 use clap::{AppSettings, Clap, Subcommand};
 use serde_json::{json, Value as JsonValue};
-use std::collections::HashSet;
 use std::path::Path;
 
 /// A struct that generates a CLI for `modelator` using [`clap`].
@@ -200,7 +199,7 @@ impl ApalacheMethods {
         use std::convert::TryFrom;
         let tla_file = TlaFile::try_from(tla_file)?;
         let tla_variables = crate::module::Apalache::tla_variables(tla_file, &options)?;
-        tracing::debug!("Apalache::tla_variables output {:?}", tla_variables);
+        tracing::debug!("Apalache::tla_variables output {}", tla_variables);
 
         extracted_tla_variables(tla_variables)
     }
@@ -296,8 +295,8 @@ fn parsed_tla_file(tla_file_parsed: TlaFile) -> Result<JsonValue, Error> {
 }
 
 #[allow(clippy::unnecessary_wraps)]
-fn extracted_tla_variables(tla_variables: HashSet<String>) -> Result<JsonValue, Error> {
+fn extracted_tla_variables(tla_variables: TlaVariables) -> Result<JsonValue, Error> {
     Ok(json!({
-        "tla_variables": tla_variables,
+        "tla_variables": format!("{}", tla_variables),
     }))
 }

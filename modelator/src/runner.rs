@@ -22,8 +22,7 @@ where
     let steps = trace
         .into_iter()
         .map(|step| {
-            serde_json::from_value(step)
-                .map_err(|e| TestError::Modelator(Error::JsonParseError(e.to_string())))
+            serde_json::from_value(step).map_err(|e| TestError::Modelator(Error::serde_json(e)))
         })
         .collect::<Result<Vec<Step>, _>>()?;
     let step_count = steps.len();

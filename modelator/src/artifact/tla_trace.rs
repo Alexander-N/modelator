@@ -1,10 +1,11 @@
 use crate::Error;
+use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 pub(crate) type TlaState = String;
 
 /// `modelator`'s artifact containing a test trace encoded as TLA+.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TlaTrace {
     states: Vec<TlaState>,
 }

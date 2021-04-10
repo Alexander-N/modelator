@@ -69,7 +69,7 @@ fn all_tests(model_checker: ModelChecker) -> Result<(), Error> {
                 // extract tla variables and check that they match the expected
                 let tla_variables =
                     modelator::module::Apalache::tla_variables(tla_tests_file, &options).unwrap();
-                assert_eq!(tla_variables, expected_tla_variables);
+                assert_eq!(tla_variables.vars(), &expected_tla_variables);
             }
         }
     }

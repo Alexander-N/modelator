@@ -58,9 +58,9 @@ pub enum Error {
     #[error("Nom error: {0}")]
     Nom(String),
 
-    /// An error that occurs when parsing a JSON value.
+    /// An error that occurs when serializing/deserializing value into/from JSON.
     #[error("JSON parse error: {0}")]
-    JsonParseError(String),
+    SerdeJson(String),
 }
 
 impl Error {
@@ -74,6 +74,10 @@ impl Error {
 
     pub(crate) fn nom(err: nom::Err<nom::error::Error<&str>>) -> Error {
         Error::Nom(err.to_string())
+    }
+
+    pub(crate) fn serde_json(err: serde_json::Error) -> Error {
+        Error::SerdeJson(err.to_string())
     }
 }
 

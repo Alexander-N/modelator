@@ -1,9 +1,11 @@
 use petgraph::graph::{Graph as PetGraph, NodeIndex};
-use std::collections::{HashMap, HashSet};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-pub(crate) struct NextStates<S> {
+#[derive(Serialize, Deserialize)]
+pub(crate) struct NextStates<S: Eq + Hash> {
     /// Mapping from state `S` to a list of next states.
     next_states: HashMap<S, Vec<S>>,
 }
@@ -170,5 +172,7 @@ mod tests {
         assert_eq!(next_states.get_next_states(&2), Some(&vec![4]));
         assert_eq!(next_states.get_next_states(&3), Some(&vec![4]));
         assert_eq!(next_states.get_next_states(&4), Some(&vec![1]));
+
+        println!("{}", next_states.dot());
     }
 }

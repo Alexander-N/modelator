@@ -239,12 +239,12 @@ where
 
 /// Tries to parse a string as the given type
 fn parse_from_str<T: DeserializeOwned>(input: &str) -> Result<T, Error> {
-    serde_json::from_str(input).map_err(|e| Error::JsonParseError(e.to_string()))
+    serde_json::from_str(input).map_err(Error::serde_json)
 }
 
 /// Tries to parse a Json Value as the given type
 fn parse_from_value<T: DeserializeOwned>(input: serde_json::Value) -> Result<T, Error> {
-    serde_json::from_value(input).map_err(|e| Error::JsonParseError(e.to_string()))
+    serde_json::from_value(input).map_err(Error::serde_json)
 }
 
 #[cfg(test)]
