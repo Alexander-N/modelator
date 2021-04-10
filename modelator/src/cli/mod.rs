@@ -1,7 +1,7 @@
 // CLI output.
 pub(crate) mod output;
 
-use crate::artifact::{JsonTrace, TlaVariables, TlaConfigFile, TlaFile, TlaTrace};
+use crate::artifact::{JsonTrace, TlaConfigFile, TlaFile, TlaTrace};
 use crate::Error;
 use clap::{AppSettings, Clap, Subcommand};
 use serde_json::{json, Value as JsonValue};
@@ -80,15 +80,15 @@ enum TlcMethods {
     },
     /// Explore a TLA+ model.
     NextStates {
-        /// TLA+ file.
+        /// TLA+ file. We assume that 'Init' and 'Next' are defined.
         tla_file: String,
-        /// TLA+ config file.
+        /// TLA+ config file containing only TLA constants.
         tla_config_file: String,
         /// TLA+ state from where to start. If not set, then initial TLA+ state
         /// will be used. TLA+ states returned by previous invokations of this
         /// command can be used as argument here.
         #[clap(short, long)]
-        start_state: Option<String>,
+        start_tla_state: Option<String>,
         /// Maximum number of next states to return.
         #[clap(long, default_value = NEXT_STATES_COUNT)]
         count: usize,
@@ -180,7 +180,6 @@ impl ApalacheMethods {
         let tla_config_file = TlaConfigFile::try_from(tla_config_file)?;
         let tla_trace = crate::module::Apalache::test(tla_file, tla_config_file, &options)?;
         tracing::debug!("Apalache::test output {}", tla_trace);
-
         save_tla_trace(tla_trace)
     }
 
@@ -190,7 +189,6 @@ impl ApalacheMethods {
         let tla_file = TlaFile::try_from(tla_file)?;
         let tla_file_parsed = crate::module::Apalache::parse(tla_file, &options)?;
         tracing::debug!("Apalache::parse output {}", tla_file_parsed);
-
         parsed_tla_file(tla_file_parsed)
     }
 
@@ -199,9 +197,8 @@ impl ApalacheMethods {
         use std::convert::TryFrom;
         let tla_file = TlaFile::try_from(tla_file)?;
         let tla_variables = crate::module::Apalache::tla_variables(tla_file, &options)?;
-        tracing::debug!("Apalache::tla_variables output {}", tla_variables);
-
-        extracted_tla_variables(tla_variables)
+        tracing::debug!("Apalache::tla_variables output {:?}", tla_variables);
+        Ok(json!(tla_variables))
     }
 }
 
@@ -215,10 +212,10 @@ impl TlcMethods {
             Self::NextStates {
                 tla_file,
                 tla_config_file,
-                start_state,
+                start_tla_state: start_tla_tate,
                 count,
                 skip,
-            } => Self::next_states(tla_file, tla_config_file, start_state, count, skip),
+            } => Self::next_states(tla_file, tla_config_file, start_tla_tate, count, skip),
         }
     }
 
@@ -229,14 +226,13 @@ impl TlcMethods {
         let tla_config_file = TlaConfigFile::try_from(tla_config_file)?;
         let tla_trace = crate::module::Tlc::test(tla_file, tla_config_file, &options)?;
         tracing::debug!("Tlc::test output {}", tla_trace);
-
         save_tla_trace(tla_trace)
     }
 
     fn next_states(
         tla_file: String,
         tla_config_file: String,
-        start_state: Option<String>,
+        start_tla_state: Option<String>,
         count: usize,
         skip: usize,
     ) -> Result<JsonValue, Error> {
@@ -244,15 +240,16 @@ impl TlcMethods {
         use std::convert::TryFrom;
         let tla_file = TlaFile::try_from(tla_file)?;
         let tla_config_file = TlaConfigFile::try_from(tla_config_file)?;
-        crate::module::Tlc::next_states(
+        let tla_next_states = crate::module::Tlc::next_states(
             tla_file,
             tla_config_file,
-            start_state,
+            start_tla_state,
             skip,
             count,
-            options,
+            &options,
         )?;
-        Ok(JsonValue::Null)
+        tracing::debug!("Tlc::next_states output {:?}", tla_next_states);
+        Ok(json!(tla_next_states))
     }
 }
 
@@ -291,12 +288,5 @@ fn save_json_trace(json_trace: JsonTrace) -> Result<JsonValue, Error> {
 fn parsed_tla_file(tla_file_parsed: TlaFile) -> Result<JsonValue, Error> {
     Ok(json!({
         "tla_file": format!("{}", tla_file_parsed),
-    }))
-}
-
-#[allow(clippy::unnecessary_wraps)]
-fn extracted_tla_variables(tla_variables: TlaVariables) -> Result<JsonValue, Error> {
-    Ok(json!({
-        "tla_variables": format!("{}", tla_variables),
     }))
 }

@@ -44,7 +44,7 @@ impl Cache {
             // if this key is cached, read it from disk
             let path = self.key_path(key);
             let file = std::fs::File::open(path).map_err(Error::io)?;
-            let mut reader = std::io::BufReader::new(file);
+            let reader = std::io::BufReader::new(file);
             let value = serde_json::from_reader(reader).map_err(Error::serde_json)?;
             Some(value)
         } else {
@@ -67,7 +67,7 @@ impl Cache {
         // write the value associated with this key to disk
         let path = self.key_path(&key);
         let file = std::fs::File::create(path).map_err(Error::io)?;
-        let mut writer = std::io::BufWriter::new(file);
+        let writer = std::io::BufWriter::new(file);
         serde_json::to_writer(writer, value).map_err(Error::serde_json)?;
 
         // mark the key as cached

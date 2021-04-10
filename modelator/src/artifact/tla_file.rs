@@ -11,7 +11,7 @@ pub struct TlaFile {
 impl TlaFile {
     pub(crate) fn new<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
         let path = path.as_ref().to_path_buf();
-        crate::util::check_file_existence(&path)?;
+        let path = crate::util::check_file_existence(&path)?;
         Ok(Self { path })
     }
 

@@ -4,8 +4,9 @@ mod output;
 /// Explorer functionality.
 mod explorer;
 
-use crate::artifact::tla_trace::TlaState;
-use crate::artifact::{TlaConfigFile, TlaFile, TlaTrace, TlaVariables};
+use crate::artifact::{
+    TlaAndJsonState, TlaConfigFile, TlaFile, TlaNextStates, TlaState, TlaTrace, TlaVariables,
+};
 use crate::cache::{NextStatesCache, TlaTraceCache};
 use crate::{jar, Error, ModelCheckerWorkers, Options};
 use serde::{Deserialize, Serialize};
@@ -139,57 +140,109 @@ impl Tlc {
     pub fn next_states(
         tla_file: TlaFile,
         tla_config_file: TlaConfigFile,
-        start_state: Option<String>,
+        start_tla_state: Option<String>,
         count: usize,
         skip: usize,
         options: &Options,
-    ) -> Result<(), Error> {
+    ) -> Result<TlaNextStates, Error> {
+        tracing::debug!(
+            "Tlc::next_states {} {} start_tla_state={:?} count={} skip={} {:?}",
+            tla_file,
+            tla_config_file,
+            start_tla_state,
+            count,
+            skip,
+            options
+        );
         // TODO: error if `Init` and `Next` are not defined; alternatively we
         //       should parse the TLA config and extract them from there
+
+        // compute tla module name: it's safe to unwrap because we have already
+        // checked that the tests file is indeed a file
+        let tla_module_name = tla_file.tla_module_name().unwrap();
+        println!("tla module name: {:?}", tla_module_name);
 
         // load cache and check if the result is cached
         let mut cache = NextStatesCache::new(options)?;
         let cache_key = crate::cache::key(&tla_file, &tla_config_file)?;
-        let cached = if let Some(value) = cache.get(&cache_key)? {
+        let mut cached = if let Some(value) = cache.get(&cache_key)? {
             value
         } else {
             // if there's nothing cached:
             // - extract TLA+ variables using Apalache
+            // - compute TLA+ initial state
             // - start a new `explorer::NextStates`
             let vars = crate::module::Apalache::tla_variables(tla_file.clone(), &options)?;
+            tracing::debug!("Tlc::next_states TLA+ vars in {}: {:?}", tla_file, vars);
+
+            // create initial explorer module
+            let start_tla_state = "/\\ Init".to_string();
+            let known_next_states = None;
+            let explorer_tla_file = explorer::generate_explorer_module(
+                &tla_module_name,
+                &vars,
+                &start_tla_state,
+                known_next_states,
+            )?;
+            println!("explorer tla file: {:?}", explorer_tla_file);
+            // create explorer config
+            let explorer_config_file = explorer::generate_explorer_config(
+                &tla_config_file,
+                explorer::ExplorerInvariant::FindInitialState,
+            )?;
+            let tla_trace = Tlc::test(explorer_tla_file, explorer_config_file, options)?;
+
+            println!("{:?}", tla_trace);
+
+            let initial_state = todo!();
             NextStatesCached {
                 vars,
+                initial_state,
                 next_states: explorer::NextStates::new(),
             }
         };
 
         // if set, start from it; otherwise, start from `Init`
-        let start_state = start_state.unwrap_or_else(|| "/\\ Init".to_string());
+        let start_state = start_tla_state.unwrap_or_else(|| "/\\ Init".to_string());
 
-        // retrieve the set of known states
+        // retrieve the set of known states from the cache
         let known_next_states = cached.next_states.get_next_states(&start_state);
 
-        // compute tla module name: it's safe to unwrap because we have already
-        // checked that the tests file is indeed a file
-        let tla_module_name = tla_file.tla_module_name().unwrap();
+        // check if we already have the next states needed
+        if let Some(known_next_states) = known_next_states {
+            if known_next_states.len() - skip >= count {
+                todo!()
+            }
+        }
 
         // create initial explorer module
-        let explorer_tla = explorer::generate_explorer_module(
+        let explorer_tla_file = explorer::generate_explorer_module(
             &tla_module_name,
             &cached.vars,
             &start_state,
             known_next_states,
-        );
+        )?;
+        println!("explorer tla file: {:?}", explorer_tla_file);
         // create explorer config
-        let explorer_cfg = explorer::generate_explorer_config(&tla_config_file)?;
+        let explorer_config_file = explorer::generate_explorer_config(
+            &tla_config_file,
+            explorer::ExplorerInvariant::Explore,
+        )?;
+        println!("explorer config file: {:?}", explorer_config_file);
 
-        Ok(())
+        let tla_trace = Tlc::test(explorer_tla_file, explorer_config_file, options)?;
+
+        println!("{:?}", tla_trace);
+
+        let tla_next_states = TlaNextStates::new();
+        Ok(tla_next_states)
     }
 }
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct NextStatesCached {
     vars: TlaVariables,
+    initial_state: TlaAndJsonState,
     next_states: explorer::NextStates<TlaState>,
 }
 

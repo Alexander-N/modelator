@@ -172,7 +172,5 @@ mod tests {
         assert_eq!(next_states.get_next_states(&2), Some(&vec![4]));
         assert_eq!(next_states.get_next_states(&3), Some(&vec![4]));
         assert_eq!(next_states.get_next_states(&4), Some(&vec![1]));
-
-        println!("{}", next_states.dot());
     }
 }

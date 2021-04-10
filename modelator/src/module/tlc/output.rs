@@ -1,4 +1,4 @@
-use crate::artifact::tla_trace::{TlaState, TlaTrace};
+use crate::artifact::{TlaState, TlaTrace};
 use crate::{Error, ModelCheckerOptions};
 
 pub(crate) fn parse(output: String, options: &ModelCheckerOptions) -> Result<Vec<TlaTrace>, Error> {

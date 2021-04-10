@@ -1,4 +1,4 @@
-use crate::artifact::tla_trace::{TlaState, TlaTrace};
+use crate::artifact::{TlaState, TlaTrace};
 use crate::Error;
 
 pub(crate) fn parse(counterexample: String) -> Result<TlaTrace, Error> {

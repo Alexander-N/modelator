@@ -1,6 +1,6 @@
 use crate::Error;
 use std::collections::HashSet;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 pub(crate) fn cmd_output_to_string(output: &[u8]) -> String {
@@ -14,10 +14,13 @@ pub(crate) fn cmd_show(cmd: &Command) -> String {
     cmd.to_owned()
 }
 
-pub(crate) fn check_file_existence<P: AsRef<Path>>(path: P) -> Result<(), Error> {
+pub(crate) fn check_file_existence<P: AsRef<Path>>(path: P) -> Result<PathBuf, Error> {
     let path = path.as_ref();
     if path.is_file() {
-        Ok(())
+        // canonicalize path: safe to unwrap as we have already verified that
+        // the file exists
+        let path = path.canonicalize().unwrap();
+        Ok(path)
     } else {
         Err(Error::FileNotFound(path.to_path_buf()))
     }
@@ -32,7 +35,10 @@ pub(crate) fn absolute_path<P: AsRef<Path>>(path: P) -> String {
 
 pub(crate) fn read_dir<P: AsRef<Path>>(path: P) -> Result<HashSet<String>, Error> {
     let mut file_names = HashSet::new();
-    let files = std::fs::read_dir(path).map_err(Error::io)?;
+    let path = path.as_ref();
+    tracing::debug!("read_dir {:?}", path);
+
+    let files = std::fs::read_dir(&path).map_err(Error::io)?;
     for file in files {
         // for each file in the modelator directory, check if it is a jar
         let file_name = file
@@ -42,6 +48,7 @@ pub(crate) fn read_dir<P: AsRef<Path>>(path: P) -> Result<HashSet<String>, Error
             .map_err(Error::InvalidUnicode)?;
         assert!(file_names.insert(file_name));
     }
+    tracing::debug!("read_dir {:?}: {:?}", path, file_names);
     Ok(file_names)
 }
 
