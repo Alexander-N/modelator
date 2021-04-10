@@ -20,19 +20,23 @@ impl TlaFile {
         &self.path
     }
 
+    /// Returns the path to directory where the TLA+ file is.
+    pub fn dir(&self) -> PathBuf {
+        let mut tla_dir = self.path.clone();
+        assert!(tla_dir.pop());
+        tla_dir
+    }
+
     /// Infer TLA module name. We assume that the TLA module name matches the
     /// name of the file.
-    pub(crate) fn tla_module_name(&self) -> Option<String> {
-        if self.path.is_file() {
-            self.path.file_name().map(|file_name| {
-                file_name
-                    .to_string_lossy()
-                    .trim_end_matches(".tla")
-                    .to_owned()
-            })
-        } else {
-            None
-        }
+    pub(crate) fn tla_module_name(&self) -> String {
+        // it's safe to unwrap because we have already checked that this is
+        // indeed a file
+        let file_name = self.path.file_name().unwrap();
+        file_name
+            .to_string_lossy()
+            .trim_end_matches(".tla")
+            .to_owned()
     }
 }
 

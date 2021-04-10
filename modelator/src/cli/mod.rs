@@ -139,7 +139,7 @@ impl TlaMethods {
         let tla_file = TlaFile::try_from(tla_file)?;
         let tla_config_file = TlaConfigFile::try_from(tla_config_file)?;
         let tests = crate::module::Tla::generate_tests(tla_file, tla_config_file)?;
-        tracing::debug!("Tla::generate_tests output {:#?}", tests);
+        tracing::debug!("Tla::generate_tests output:\n{:#?}", tests);
 
         generated_tests(tests)
     }
@@ -155,7 +155,7 @@ impl TlaMethods {
 
         // convert tla trace to json trace
         let json_trace = crate::module::Tla::tla_trace_to_json_trace(tla_trace)?;
-        tracing::debug!("Tla::tla_trace_to_json_trace output {}", json_trace);
+        tracing::debug!("Tla::tla_trace_to_json_trace output:\n{}", json_trace);
 
         save_json_trace(json_trace)
     }
@@ -179,7 +179,7 @@ impl ApalacheMethods {
         let tla_file = TlaFile::try_from(tla_file)?;
         let tla_config_file = TlaConfigFile::try_from(tla_config_file)?;
         let tla_trace = crate::module::Apalache::test(tla_file, tla_config_file, &options)?;
-        tracing::debug!("Apalache::test output {}", tla_trace);
+        tracing::debug!("Apalache::test output:\n{}", tla_trace);
         save_tla_trace(tla_trace)
     }
 
@@ -188,7 +188,7 @@ impl ApalacheMethods {
         use std::convert::TryFrom;
         let tla_file = TlaFile::try_from(tla_file)?;
         let tla_file_parsed = crate::module::Apalache::parse(tla_file, &options)?;
-        tracing::debug!("Apalache::parse output {}", tla_file_parsed);
+        tracing::debug!("Apalache::parse output:\n{}", tla_file_parsed);
         parsed_tla_file(tla_file_parsed)
     }
 
@@ -197,7 +197,7 @@ impl ApalacheMethods {
         use std::convert::TryFrom;
         let tla_file = TlaFile::try_from(tla_file)?;
         let tla_variables = crate::module::Apalache::tla_variables(tla_file, &options)?;
-        tracing::debug!("Apalache::tla_variables output {:?}", tla_variables);
+        tracing::debug!("Apalache::tla_variables output\n{:?}", tla_variables);
         Ok(json!(tla_variables))
     }
 }
@@ -225,7 +225,7 @@ impl TlcMethods {
         let tla_file = TlaFile::try_from(tla_file)?;
         let tla_config_file = TlaConfigFile::try_from(tla_config_file)?;
         let tla_trace = crate::module::Tlc::test(tla_file, tla_config_file, &options)?;
-        tracing::debug!("Tlc::test output {}", tla_trace);
+        tracing::debug!("Tlc::test output:\n{}", tla_trace);
         save_tla_trace(tla_trace)
     }
 
@@ -248,7 +248,7 @@ impl TlcMethods {
             count,
             &options,
         )?;
-        tracing::debug!("Tlc::next_states output {:?}", tla_next_states);
+        tracing::debug!("Tlc::next_states output:\n{:?}", tla_next_states);
         Ok(json!(tla_next_states))
     }
 }

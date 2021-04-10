@@ -5,7 +5,7 @@ use crate::artifact::{TlaConfigFile, TlaFile, TlaTrace, TlaVariables};
 use crate::cache::TlaTraceCache;
 use crate::{jar, Error, Options};
 use serde_json::Value as JsonValue;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -122,7 +122,8 @@ impl Apalache {
     /// let tla_file = TlaFile::try_from(tla_file).unwrap();
     ///
     /// let options = Options::default();
-    /// let mut vars = Apalache::tla_variables(tla_file, &options).unwrap();
+    /// let tla_variables = Apalache::tla_variables(tla_file, &options).unwrap();
+    /// let vars = tla_variables.vars();
     /// assert_eq!(vars.len(), 2);
     /// assert!(vars.contains("a"));
     /// assert!(vars.contains("b"));
@@ -146,7 +147,7 @@ impl Apalache {
             .expect("[modelator] 'declarations' in the json produced by apalache parse should be an array");
 
         // iterate all declarations and extract tla variables when we find them
-        let mut vars = HashSet::new();
+        let mut vars = BTreeSet::new();
         for tla_declaration in tla_declarations {
             if let Some(var) = tla_declaration.get("variable") {
                 let var = var.as_str()
@@ -183,16 +184,12 @@ fn parse_with_format(
     format: ApalacheParseFormat,
     options: &Options,
 ) -> Result<PathBuf, Error> {
-    // compute the directory in which the tla file is stored
-    let mut tla_dir = tla_file.path().clone();
-    assert!(tla_dir.pop());
-
-    // compute tla module name: it's okay to unwrap as we have already
-    // verified that the file exists
-    let tla_module_name = tla_file.tla_module_name().unwrap();
-
     // compute the output tla file
-    let parsed_file = tla_dir.join(format!("{}Parsed.{}", tla_module_name, format.name()));
+    let parsed_file = tla_file.dir().join(format!(
+        "{}Parsed.{}",
+        tla_file.tla_module_name(),
+        format.name()
+    ));
 
     // create apalache parse command
     let cmd = parse_cmd(tla_file.path(), &parsed_file, options);

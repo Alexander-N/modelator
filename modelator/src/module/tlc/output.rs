@@ -3,7 +3,15 @@ use crate::{Error, ModelCheckerOptions};
 
 pub(crate) fn parse(output: String, options: &ModelCheckerOptions) -> Result<Vec<TlaTrace>, Error> {
     let mut traces = Vec::new();
-    let mut lines = output.lines();
+
+    // skip all lines until after the message "Computing initial states..."
+    let mut lines = output
+        .lines()
+        .skip_while(|line| !line.starts_with("@!@!@ENDMSG 2189 @!@!@"));
+
+    // after this, we have two possibilities, depending on whether the invariant
+    // was violated in the initial state, or in the following states
+    todo!();
 
     while let Some(line) = lines.next() {
         // check if found the beginning of the next trace
@@ -17,7 +25,7 @@ pub(crate) fn parse(output: String, options: &ModelCheckerOptions) -> Result<Vec
 }
 
 fn parse_trace<'a>(
-    lines: &mut std::str::Lines<'a>,
+    lines: &mut impl Iterator<Item = &'a str>,
     options: &ModelCheckerOptions,
 ) -> Result<Option<TlaTrace>, Error> {
     let mut state_index = 0;

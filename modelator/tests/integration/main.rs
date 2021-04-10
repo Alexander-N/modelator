@@ -5,7 +5,7 @@ use modelator::artifact::{JsonTrace, TlaFile};
 use modelator::{CliOptions, CliStatus, Error, ModelChecker, ModelCheckerOptions, Options};
 use once_cell::sync::Lazy;
 use serde_json::{json, Value as JsonValue};
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
@@ -193,7 +193,7 @@ fn absolute_and_relative_paths(
     ]
 }
 
-fn numbers_a_max_b_min_test() -> (&'static str, &'static str, JsonTrace, HashSet<String>) {
+fn numbers_a_max_b_min_test() -> (&'static str, &'static str, JsonTrace, BTreeSet<String>) {
     let tla_tests_file = "NumbersAMaxBMinTest.tla";
     let tla_config_file = "Numbers.cfg";
     let expected: Vec<_> = (0..=10)
@@ -205,7 +205,7 @@ fn numbers_a_max_b_min_test() -> (&'static str, &'static str, JsonTrace, HashSet
         })
         .collect();
     use std::iter::FromIterator;
-    let expected_tla_variables = HashSet::from_iter(vec!["a".to_string(), "b".to_string()]);
+    let expected_tla_variables = BTreeSet::from_iter(vec!["a".to_string(), "b".to_string()]);
     (
         tla_tests_file,
         tla_config_file,
@@ -214,7 +214,7 @@ fn numbers_a_max_b_min_test() -> (&'static str, &'static str, JsonTrace, HashSet
     )
 }
 
-fn numbers_a_min_b_max_test() -> (&'static str, &'static str, JsonTrace, HashSet<String>) {
+fn numbers_a_min_b_max_test() -> (&'static str, &'static str, JsonTrace, BTreeSet<String>) {
     let tla_tests_file = "NumbersAMinBMaxTest.tla";
     let tla_config_file = "Numbers.cfg";
     let expected: Vec<_> = (0..=10)
@@ -227,7 +227,7 @@ fn numbers_a_min_b_max_test() -> (&'static str, &'static str, JsonTrace, HashSet
         })
         .collect();
     use std::iter::FromIterator;
-    let expected_tla_variables = HashSet::from_iter(vec!["a".to_string(), "b".to_string()]);
+    let expected_tla_variables = BTreeSet::from_iter(vec!["a".to_string(), "b".to_string()]);
     (
         tla_tests_file,
         tla_config_file,

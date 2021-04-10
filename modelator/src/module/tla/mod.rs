@@ -66,13 +66,9 @@ impl Tla {
     ) -> Result<Vec<(TlaFile, TlaConfigFile)>, Error> {
         tracing::debug!("Tla::generate_tests {} {}", tla_tests_file, tla_config_file);
 
-        // compute the directory in which the tla tests file is stored
-        let mut tla_tests_dir = tla_tests_file.path().clone();
-        assert!(tla_tests_dir.pop());
-
-        // compute tla tests module name: it's safe to unwrap because we have
-        // already checked that the tests file is indeed a file
-        let tla_tests_module_name = tla_tests_file.tla_module_name().unwrap();
+        // get TLA directory and module name
+        let tla_tests_dir = tla_tests_file.dir();
+        let tla_tests_module_name = tla_tests_file.tla_module_name();
 
         // retrieve test names from tla tests file
         let test_names = extract_test_names(&tla_tests_file)?;

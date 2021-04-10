@@ -90,9 +90,7 @@ impl Tlc {
                     // if the tla file passed as input to TLC is an absolute
                     // path, then TLC creates the 'states' directory in the same
                     // directory as the tla file
-                    let mut tla_dir = tla_file.path().clone();
-                    assert!(tla_dir.pop());
-                    tla_dir.join("states")
+                    tla_file.dir().join("states")
                 } else {
                     // otherwise, it creates the 'states' directory in the
                     // current directory
@@ -157,11 +155,6 @@ impl Tlc {
         // TODO: error if `Init` and `Next` are not defined; alternatively we
         //       should parse the TLA config and extract them from there
 
-        // compute tla module name: it's safe to unwrap because we have already
-        // checked that the tests file is indeed a file
-        let tla_module_name = tla_file.tla_module_name().unwrap();
-        println!("tla module name: {:?}", tla_module_name);
-
         // load cache and check if the result is cached
         let mut cache = NextStatesCache::new(options)?;
         let cache_key = crate::cache::key(&tla_file, &tla_config_file)?;
@@ -178,23 +171,23 @@ impl Tlc {
             // create initial explorer module
             let start_tla_state = "/\\ Init".to_string();
             let known_next_states = None;
-            let explorer_tla_file = explorer::generate_explorer_module(
-                &tla_module_name,
+            let tla_trace = explorer::explore(
+                &tla_file,
+                &tla_config_file,
                 &vars,
                 &start_tla_state,
                 known_next_states,
-            )?;
-            println!("explorer tla file: {:?}", explorer_tla_file);
-            // create explorer config
-            let explorer_config_file = explorer::generate_explorer_config(
-                &tla_config_file,
                 explorer::ExplorerInvariant::FindInitialState,
+                options,
             )?;
-            let tla_trace = Tlc::test(explorer_tla_file, explorer_config_file, options)?;
+            println!("!!!\n{:?}", tla_trace);
 
-            println!("{:?}", tla_trace);
-
+            // TODO: the following may not exist, as we may have more than one
+            // initial state; so actually, next-states should be also applied to
+            // `Init`, where we keep retrieving initial states, and we can do
+            // pagination on them as well
             let initial_state = todo!();
+
             NextStatesCached {
                 vars,
                 initial_state,
@@ -215,23 +208,15 @@ impl Tlc {
             }
         }
 
-        // create initial explorer module
-        let explorer_tla_file = explorer::generate_explorer_module(
-            &tla_module_name,
+        let tla_trace = explorer::explore(
+            &tla_file,
+            &tla_config_file,
             &cached.vars,
             &start_state,
             known_next_states,
-        )?;
-        println!("explorer tla file: {:?}", explorer_tla_file);
-        // create explorer config
-        let explorer_config_file = explorer::generate_explorer_config(
-            &tla_config_file,
             explorer::ExplorerInvariant::Explore,
+            options,
         )?;
-        println!("explorer config file: {:?}", explorer_config_file);
-
-        let tla_trace = Tlc::test(explorer_tla_file, explorer_config_file, options)?;
-
         println!("{:?}", tla_trace);
 
         let tla_next_states = TlaNextStates::new();

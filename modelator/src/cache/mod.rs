@@ -5,8 +5,8 @@ mod tla_trace;
 mod next_states;
 
 // Re-exports;
-pub(crate) use tla_trace::TlaTraceCache;
 pub(crate) use next_states::NextStatesCache;
+pub(crate) use tla_trace::TlaTraceCache;
 
 use crate::artifact::{TlaConfigFile, TlaFile};
 use crate::{Error, Options};
@@ -86,9 +86,7 @@ pub(crate) fn key(tla_file: &TlaFile, tla_config_file: &TlaConfigFile) -> Result
     tracing::debug!("cache::key {} {}", tla_file, tla_config_file);
 
     // get all tla files in the same directory
-    let mut tla_dir = tla_file.path().clone();
-    assert!(tla_dir.pop());
-
+    let tla_dir = tla_file.dir();
     let files_to_hash = crate::util::read_dir(&tla_dir)?
         .into_iter()
         .filter(|filename| filename.ends_with(".tla"))

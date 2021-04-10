@@ -52,6 +52,13 @@ pub(crate) fn read_dir<P: AsRef<Path>>(path: P) -> Result<HashSet<String>, Error
     Ok(file_names)
 }
 
+pub(crate) fn timestamp() -> u128 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("[modelator] we're way past UNIX EPOCH")
+        .as_micros()
+}
+
 pub(crate) mod digest {
     use super::*;
     use sha2::Digest;

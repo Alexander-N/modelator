@@ -1,7 +1,6 @@
 use crate::artifact::{TlaConfigFile, TlaFile, TlaVariables};
 use crate::Error;
 use std::convert::TryFrom;
-use std::path::Path;
 
 pub(crate) enum ExplorerInvariant {
     Explore,
@@ -19,14 +18,15 @@ impl std::fmt::Display for ExplorerInvariant {
 }
 
 pub(crate) fn generate_explorer_module(
-    tla_module_name: &str,
+    tla_file: &TlaFile,
     tla_variables: &TlaVariables,
     start_state: &String,
     known_next_states: Option<&Vec<String>>,
+    timestamp: u128,
 ) -> Result<TlaFile, Error> {
     let content = format!(
         r#"
----------- MODULE Explore ----------
+---------- MODULE {} ----------
 
 EXTENDS {}
 
@@ -74,7 +74,8 @@ KnownNextStates == {}
 
 ====================================
 "#,
-        tla_module_name,
+        explore_module_name(timestamp),
+        tla_file.tla_module_name(),
         explored_state_tla_definition(&tla_variables),
         start_state,
         explored_state_tla_definition_call(&tla_variables),
@@ -82,14 +83,18 @@ KnownNextStates == {}
         known_next_states_set(known_next_states),
         ExplorerInvariant::Explore,
     );
-    let path = Path::new("Explore.tla").to_path_buf();
+    let path = tla_file
+        .dir()
+        .join(format!("{}.tla", explore_module_name(timestamp)));
     std::fs::write(&path, content).map_err(Error::io)?;
     TlaFile::try_from(path)
 }
 
 pub(crate) fn generate_explorer_config(
+    tla_file: &TlaFile,
     tla_config_file: &TlaConfigFile,
     explorer_invariant: ExplorerInvariant,
+    timestamp: u128,
 ) -> Result<TlaConfigFile, Error> {
     // TODO: write a config parser: assume that only constant(s) are allowed and
     //       throw error otherwise
@@ -103,9 +108,15 @@ INVARIANT {}
 "#,
         tla_config, explorer_invariant
     );
-    let path = Path::new("Explore.cfg").to_path_buf();
+    let path = tla_file
+        .dir()
+        .join(format!("{}.cfg", explore_module_name(timestamp)));
     std::fs::write(&path, content).map_err(Error::io)?;
     TlaConfigFile::try_from(path)
+}
+
+fn explore_module_name(timestamp: u128) -> String {
+    format!("Explore_{}", timestamp)
 }
 
 fn explored_state_tla_definition_call(tla_variables: &TlaVariables) -> String {
@@ -133,28 +144,25 @@ fn explored_state_tla_definition(tla_variables: &TlaVariables) -> String {
         .iter()
         .map(|var| format!("{} |-> {}_value", var, var))
         .collect::<Vec<_>>()
-        .join(",\n\t\t");
+        .join(",\n        ");
     format!(
-        r#"
-ExploredState({}) ==
+        r#"ExploredState({}) ==
     [
         {}
-    ]
-"#,
+    ]"#,
         args, history_vars
     )
 }
 
 fn known_next_states_set(known_next_states: Option<&Vec<String>>) -> String {
     let known_next_states = known_next_states
-        .map(|known_next_states| known_next_states.join(",\n\t\t"))
+        .map(|known_next_states| known_next_states.join(",\n        "))
         .unwrap_or_default();
     format!(
         r#"
     {{
         {}
-    }}
-"#,
+    }}"#,
         known_next_states
     )
 }
