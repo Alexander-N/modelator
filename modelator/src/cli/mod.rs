@@ -11,7 +11,7 @@ use crate::artifact::{Artifact, JsonTrace, TlaFile, TlaFileSuite, TlaTrace};
 use crate::model::checker::ModelChecker;
 use crate::Error;
 use clap::{crate_authors, crate_description, crate_license, crate_name, crate_version};
-use clap::{AppSettings, ArgEnum, ArgSettings, Clap, Subcommand, ValueHint};
+use clap::{AppSettings, ArgEnum, ArgSettings, ColorChoice, Parser, Subcommand, ValueHint};
 use serde_json::{json, Value as JsonValue};
 use std::path::Path;
 
@@ -19,8 +19,8 @@ use std::path::Path;
 pub use output::{CliOutput, CliStatus};
 
 /// Parse TLA+ files with Apalache.
-#[derive(Debug, Clap)]
-#[clap(setting = AppSettings::ColoredHelp)]
+#[derive(Debug, Parser)]
+#[clap(color = ColorChoice::Auto)]
 pub struct ParseCli {
     /// TLA+ file with test cases.
     #[clap(parse(from_os_str), value_hint = ValueHint::FilePath)]
@@ -38,8 +38,8 @@ impl ParseCli {
 }
 
 /// Parse TLA+ files with Apalache.
-#[derive(Debug, Clap)]
-#[clap(setting = AppSettings::ColoredHelp)]
+#[derive(Debug, Parser)]
+#[clap(color = ColorChoice::Auto)]
 pub struct TestListCli {
     /// TLA+ file with test cases.
     #[clap(parse(from_os_str), value_hint = ValueHint::FilePath)]
@@ -58,8 +58,8 @@ impl TestListCli {
 }
 
 /// Test models with Apalache/TLC
-#[derive(Debug, Clap)]
-#[clap(setting = AppSettings::ColoredHelp)]
+#[derive(Debug, Parser)]
+#[clap(color = ColorChoice::Auto)]
 pub struct TraceCli {
     /// test name
     #[clap(short, long, default_value = "@all")]
@@ -156,7 +156,7 @@ impl TraceCli {
     }
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 enum Module {
     /// Parse TLA+ files.
     Parse(ParseCli),
@@ -181,13 +181,12 @@ impl Module {
 }
 
 /// A struct that generates a CLI for `modelator` using [`clap`].
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 #[clap(
     name = crate_name!(),
     author,
     about,
     version,
-    setting = AppSettings::ColoredHelp,
     setting = AppSettings::InferSubcommands
 )]
 pub struct App {
@@ -201,7 +200,7 @@ impl App {
     }
 }
 
-#[derive(Debug, ArgEnum)]
+#[derive(Debug, ArgEnum, Clone)]
 enum OutputFormat {
     Tla,
     Json,

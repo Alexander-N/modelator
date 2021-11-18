@@ -199,7 +199,7 @@ fn cli_traces<P: AsRef<Path>>(
     tla_config_file: P,
     options: &ModelatorRuntime,
 ) -> Result<Vec<JsonTrace>, Error> {
-    use clap::Clap;
+    use clap::Parser;
     // run CLI to generate tests
     let cli_output = App::parse_from(&[
         "modelator",
